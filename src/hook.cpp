@@ -20,7 +20,7 @@ namespace WaitYourTurn
         if (a_actor && a_actor->GetCombatGroup() && overrideActors.contains(a_actor->GetFormID()))
         {
             SKSE::log::info("Overriding {} : {:X}", a_actor->GetName(), a_actor->GetFormID());
-            return circle_package;
+            return circlePackage;
         }
         return _GetOverridePackage(a_extraData, a_actor);
     }

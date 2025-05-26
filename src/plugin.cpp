@@ -1,5 +1,6 @@
 #include "log.h"
 #include "hook.h"
+#include "event.h"
 using namespace WaitYourTurn;
 void OnDataLoaded()
 {
@@ -11,6 +12,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
         PackageOverrideHook::Load();
+		PackageEventHandler::Register();
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
 		break;

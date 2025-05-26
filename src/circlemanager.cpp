@@ -4,17 +4,29 @@ namespace WaitYourTurn
 {
     void WaitYourTurn::CircleManager::StartCircling(CombatGroup *a_group)
     {
+        SKSE::log::info("Starting circling for group {}", a_group->groupID);
         CircleAll(a_group);
         WriteLocker locker(dataLock);
         auto& circleMembers = freeMemberMap.emplace(a_group->groupID, std::vector<FreeMember>()).first->second;
     }
     void CircleManager::StopCircling(CombatGroup *a_group)
     {
+        SKSE::log::info("Stopping circling for group {}", a_group->groupID);
         FreeAll(a_group);
         WriteLocker locker(dataLock);
         freeMemberMap.erase(a_group->groupID);
     }
     void CircleManager::UpdateCircling(CombatGroup *a_group)
+    {
+        SKSE::log::info("Updating circling for group {}", a_group->groupID);
+        auto& circleMembers = FindCreateCircleGroup(a_group);
+        UpdateFreeMembers(circleMembers);
+        for(int n = currentFreeMembers; n < maxFreeMembers; n++)
+        {
+            FreeNewMember(a_group, circleMembers);
+        }
+    }
+    std::vector<CircleManager::FreeMember>& CircleManager::FindCreateCircleGroup(CombatGroup *a_group)
     {
         ReadLocker locker(dataLock);
         auto result = freeMemberMap.find(a_group->groupID);
@@ -22,26 +34,25 @@ namespace WaitYourTurn
         {
             locker.unlock();
             StartCircling(a_group);
-            return;
+            return FindCreateCircleGroup(a_group);
         }
-        locker.unlock();
+        return result->second;
+    }
+    void CircleManager::UpdateFreeMembers(std::vector<FreeMember> &circleMembers)
+    {
         WriteLocker writeLocker(dataLock);
         float timeElapsed = GetSecondsSinceLastFrame();
-        auto& circleMembers = result->second;
         for(size_t i = circleMembers.size(); i--;)
         {
             auto& member = circleMembers[i];
             member.timeRemaining -= timeElapsed;
             if (member.timeRemaining < 0.f)
             {
+                SKSE::log::info("Locking actor {:X} into circle", member.formID);
+                currentFreeMembers--;
                 member.Circle();
                 circleMembers.erase(circleMembers.begin() + i);
             }
-        }
-        writeLocker.unlock();
-        for(int n = circleMembers.size(); n < maxCircleMembers; n++)
-        {
-            FreeNewMember(a_group, circleMembers);
         }
     }
     void CircleManager::CircleAll(CombatGroup *a_group)
@@ -73,9 +84,10 @@ namespace WaitYourTurn
         std::uniform_int_distribution<int> dist(0, a_group->members.size() - 1);
         auto index = dist(mt);
         auto formID = combatMembers[index].memberHandle.get()->GetFormID();
-
         WriteLocker locker(dataLock);
-        circleMembers.emplace_back(FreeMember(formID, GetCircleDuration()));
+        currentFreeMembers++;
+        auto& newMember = circleMembers.emplace_back(FreeMember(formID, GetCircleDuration()));
+        SKSE::log::info("Unlocking actor {:X} from circle for {} seconds", newMember.formID, newMember.timeRemaining);
     }
     float CircleManager::GetCircleDuration()
     {

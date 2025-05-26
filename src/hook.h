@@ -13,7 +13,7 @@ namespace WaitYourTurn
         public:
         static void Load()
         {
-            circle_package = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp")->As<TESPackage>();
+            circlePackage = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp")->As<TESPackage>();
         }
         static void Install()
         {
@@ -25,7 +25,7 @@ namespace WaitYourTurn
         static void RemoveOverride(RE::FormID actorId);
         static void AddOverride(RE::FormID actorId);
         private:
-        static inline TESPackage* circle_package; 
+        static inline TESPackage* circlePackage; 
         static TESPackage* GetOverridePackage(ExtraDataList* a_extraData, Actor* a_actor); 
         static inline REL::Relocation<decltype(GetOverridePackage)> _GetOverridePackage; 
 

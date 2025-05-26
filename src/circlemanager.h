@@ -30,7 +30,10 @@ namespace WaitYourTurn
         // static inline std::unordered_set<FormID> unlockActors;
         static inline std::unordered_map<uint32_t, std::vector<FreeMember>> freeMemberMap; 
         static inline std::unordered_set<FormID> freeActorIDs;
-        static inline size_t maxCircleMembers = 1; 
+        static inline size_t currentFreeMembers = 0; 
+        static inline size_t maxFreeMembers = 1; 
+        static std::vector<FreeMember>& FindCreateCircleGroup(CombatGroup* a_group);
+        static void UpdateFreeMembers(std::vector<FreeMember>& members);
         static void CircleAll(CombatGroup* a_group);
         static void FreeAll(CombatGroup* a_group);
         static void FreeNewMember(CombatGroup *a_group, std::vector<FreeMember>& freeMembers);
