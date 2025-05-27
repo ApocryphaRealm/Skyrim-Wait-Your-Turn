@@ -3,23 +3,54 @@
 #include <random>
 #include "util.h"
 #include "hook.h"
+#include "settings.h"
 namespace WaitYourTurn
 {
     class CircleManager
     {
         // who up circling they member
-        struct FreeMember
+        struct CircleMember
         {
             float timeRemaining;
             FormID formID;
-            FreeMember(FormID id, float time) : formID(id), timeRemaining(time) { Free(); }
-            void Free();
-            void Circle();
+            CircleMember(FormID id, float time) : formID(id), timeRemaining(time) { StopCircling(); }
+            CircleMember(FormID id) : formID(id), timeRemaining(0.f) { StartCircling(); }
+            void StopCircling();
+            void StartCircling();
+
+            ~CircleMember();
         };
+        struct CircleGroup
+        {
+            private:
+            using Lock = std::shared_mutex;
+            using ReadLocker = std::shared_lock<Lock>;
+            using WriteLocker = std::unique_lock<Lock>;
+
+            public:
+            static inline Lock lock;
+            
+            std::unordered_map<FormID, CircleMember> circlerMap;
+            std::unordered_map<FormID, CircleMember> attackerMap;
+            void SetAttacker(FormID formID);
+            void UnsetAttacker(FormID formID);
+            void Update(float a_delta);
+        };
+
+
+
         public:
-        static void StartCircling(CombatGroup* a_group); 
-        static void StopCircling(CombatGroup* a_group);
-        static void UpdateCircling(CombatGroup* a_group); 
+        static void UpdateTarget(FormID actorId);
+        static void ChangeTarget(FormID targetID, FormID lastTargetID, FormID combatMemberID);
+        static void AddTarget(FormID targetID, FormID combatMemberID);
+        static void RemoveTarget(FormID targetID);
+        static void RemoveCombatant(FormID targetID, FormID actorId);
+
+        static bool IsBeingCircled(Actor* a_target);
+        static bool CanCircle(Actor* a_target, Actor* a_combatant);
+
+        static void LoadCircleGroups();
+
         private:
         using Lock = std::shared_mutex;
         using ReadLocker = std::shared_lock<Lock>;
@@ -28,15 +59,23 @@ namespace WaitYourTurn
         static inline std::random_device rd;
         static inline std::mt19937 mt{rd()};
         // static inline std::unordered_set<FormID> unlockActors;
-        static inline std::unordered_map<uint32_t, std::vector<FreeMember>> freeMemberMap; 
-        static inline std::unordered_set<FormID> freeActorIDs;
-        static inline size_t currentFreeMembers = 0; 
-        static inline size_t maxFreeMembers = 1; 
-        static std::vector<FreeMember>& FindCreateCircleGroup(CombatGroup* a_group);
-        static void UpdateFreeMembers(std::vector<FreeMember>& members);
-        static void CircleAll(CombatGroup* a_group);
-        static void FreeAll(CombatGroup* a_group);
-        static void FreeNewMember(CombatGroup *a_group, std::vector<FreeMember>& freeMembers);
-        static float GetCircleDuration();
+        static inline std::unordered_map<FormID, CircleGroup> circleGroupMap;
+        static float GetAttackerDuration(FormID formID);
+        static bool IsRangedOrMagic(Actor* a_actor);
+        static inline bool IsRangedItemType(uint16_t type)
+        {
+            return (type == 7 || type == 12);
+        }
+        static inline bool IsMagicItemType(uint16_t type)
+        {
+            return (type == 8 || type == 9);
+        }
+
+        static uint16_t GetEquippedItemType(TESForm* a_form)
+        {
+            using func_t = decltype(GetEquippedItemType); 
+            static REL::Relocation<func_t> func { REL::RelocationID(14125, 14220) }; 
+            return func(a_form); 
+        }
     };
 }

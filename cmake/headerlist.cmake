@@ -7,4 +7,5 @@ set(headers ${headers}
     src/RE/TESPackageEvent.h
     src/circlemanager.h
     src/event.h
+    src/nameof.hpp
 )

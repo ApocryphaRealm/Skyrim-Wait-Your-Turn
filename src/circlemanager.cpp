@@ -2,104 +2,221 @@
 
 namespace WaitYourTurn
 {
-    void WaitYourTurn::CircleManager::StartCircling(CombatGroup *a_group)
+
+    void CircleManager::CircleMember::StopCircling()
     {
-        SKSE::log::info("Starting circling for group {}", a_group->groupID);
-        CircleAll(a_group);
-        WriteLocker locker(dataLock);
-        auto& circleMembers = freeMemberMap.emplace(a_group->groupID, std::vector<FreeMember>()).first->second;
+        PackageOverrideHook::RemoveOverride(formID); 
+        auto* actor = TESForm::LookupByID<Actor>(formID);
+        SKSE::log::info("{} stopped circling", actor->GetName());
+        if (actor) {actor->EvaluatePackage(true, false);}
     }
-    void CircleManager::StopCircling(CombatGroup *a_group)
+    void CircleManager::CircleMember::StartCircling()
     {
-        SKSE::log::info("Stopping circling for group {}", a_group->groupID);
-        FreeAll(a_group);
-        WriteLocker locker(dataLock);
-        freeMemberMap.erase(a_group->groupID);
+        PackageOverrideHook::AddOverride(formID);
+        auto* actor = TESForm::LookupByID<Actor>(formID);
+        SKSE::log::info("{} started circling", actor->GetName());
+        if (actor) {actor->EvaluatePackage(true, false);}
     }
-    void CircleManager::UpdateCircling(CombatGroup *a_group)
+    CircleManager::CircleMember::~CircleMember()
     {
-        SKSE::log::info("Updating circling for group {}", a_group->groupID);
-        auto& circleMembers = FindCreateCircleGroup(a_group);
-        UpdateFreeMembers(circleMembers);
-        for(int n = currentFreeMembers; n < maxFreeMembers; n++)
+        StopCircling();
+    }
+    void CircleManager::UpdateTarget(FormID actorID)
+    {
+        ReadLocker readLocker(dataLock);
+        auto result = circleGroupMap.find(actorID);
+        if (result == circleGroupMap.end())
         {
-            FreeNewMember(a_group, circleMembers);
+            return;
         }
+        auto& group = result->second;
+        group.Update(GetSecondsSinceLastFrame());
     }
-    std::vector<CircleManager::FreeMember>& CircleManager::FindCreateCircleGroup(CombatGroup *a_group)
-    {
-        ReadLocker locker(dataLock);
-        auto result = freeMemberMap.find(a_group->groupID);
-        if (result == freeMemberMap.end())
-        {
-            locker.unlock();
-            StartCircling(a_group);
-            return FindCreateCircleGroup(a_group);
-        }
-        return result->second;
-    }
-    void CircleManager::UpdateFreeMembers(std::vector<FreeMember> &circleMembers)
+    void CircleManager::ChangeTarget(FormID targetID, FormID lastTargetID, FormID combatMemberID)
     {
         WriteLocker writeLocker(dataLock);
-        float timeElapsed = GetSecondsSinceLastFrame();
-        for(size_t i = circleMembers.size(); i--;)
+        auto result = circleGroupMap.find(targetID);
+        CircleGroup* newCircleGroup;
+        if (result == circleGroupMap.end())
         {
-            auto& member = circleMembers[i];
-            member.timeRemaining -= timeElapsed;
-            if (member.timeRemaining < 0.f)
+            result = circleGroupMap.emplace(targetID, CircleGroup()).first;
+            result->second.circlerMap.emplace(combatMemberID, combatMemberID);
+            // return;
+        }
+        newCircleGroup = &result->second;
+        auto lastResult = circleGroupMap.find(lastTargetID);
+        if (lastResult != circleGroupMap.end())
+        {
+            auto& oldCircleGroup = lastResult->second;
+            if (oldCircleGroup.attackerMap.contains(combatMemberID)) 
             {
-                SKSE::log::info("Locking actor {:X} into circle", member.formID);
-                currentFreeMembers--;
-                member.Circle();
-                circleMembers.erase(circleMembers.begin() + i);
+                newCircleGroup->attackerMap.insert(oldCircleGroup.attackerMap.extract(combatMemberID));
+            }
+            else if (oldCircleGroup.circlerMap.contains(combatMemberID))
+            {
+                newCircleGroup->circlerMap.insert(oldCircleGroup.circlerMap.extract(combatMemberID));
+            }
+        }
+        if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
+        result->second.circlerMap.emplace(combatMemberID, combatMemberID);
+        SKSE::log::info("Changed {:X} from target {:X} to target {:X}", combatMemberID, lastTargetID, targetID);
+    }
+    void CircleManager::AddTarget(FormID targetID, FormID combatMemberID)
+    {
+        WriteLocker writeLocker(dataLock);
+        auto result = circleGroupMap.find(targetID);
+        CircleGroup* newCircleGroup;
+        if (result == circleGroupMap.end())
+        {
+            result = circleGroupMap.emplace(targetID, CircleGroup()).first;
+        }
+        newCircleGroup = &result->second;
+        if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
+        result->second.circlerMap.emplace(combatMemberID, combatMemberID);
+        SKSE::log::info("Added combatant {:X} to target {:X}", combatMemberID, targetID);
+    }
+    bool CircleManager::IsBeingCircled(Actor *a_target)
+    {
+        ReadLocker readLocker(dataLock);
+        return circleGroupMap.contains(a_target->GetFormID());
+    }
+    bool CircleManager::CanCircle(Actor *a_target, Actor *a_combatant)
+    {
+        return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat) &&
+        (!a_combatant->IsPlayerRef()) && (a_target->IsPlayerRef() || !Settings::GetCircling().bPlayerOnly) && 
+        !IsRangedOrMagic(a_combatant);
+    }
+    void CircleManager::RemoveTarget(FormID targetID)
+    {
+        WriteLocker writeLocker(dataLock);
+        if (circleGroupMap.erase(targetID) > 0)
+        {
+            SKSE::log::info("Removed target {:X}", targetID);
+        }
+    }
+    void CircleManager::RemoveCombatant(FormID targetID, FormID actorID)
+    {
+        WriteLocker writeLocker(dataLock);
+        auto result = circleGroupMap.find(targetID);
+        if (result == circleGroupMap.end())
+        {
+            SKSE::log::info("Target {:X} not found to remove combatant {:X}", targetID, actorID);
+            return;
+        }
+        auto& group = result->second;
+        WriteLocker groupLocker(group.lock);
+        group.attackerMap.erase(actorID);
+        group.circlerMap.erase(actorID);
+    }
+    void CircleManager::LoadCircleGroups()
+    {
+        auto* player = PlayerCharacter::GetSingleton();
+        if (player && player->GetCombatGroup())
+        {
+            auto* combatGroup = player->GetCombatGroup();
+            BSReadLockGuard locker(combatGroup->lock);
+            for(auto& target : combatGroup->targets)
+            {
+                auto targetPtr = target.targetHandle.get();
+                if (targetPtr && player->IsCombatTarget(targetPtr.get()) && CircleManager::CanCircle(player, targetPtr.get()))
+                {
+                    CircleManager::AddTarget(player->GetFormID(), targetPtr->GetFormID());
+                }
+            }
+        }
+        auto processLists = ProcessLists::GetSingleton();
+        for(auto actorHandle : processLists->highActorHandles)
+        {
+            auto actorPtr = actorHandle.get();
+            if (!actorPtr) { continue; }
+            auto* combatController = actorPtr->GetActorRuntimeData().combatController;
+            if (!combatController) { continue; }
+            auto targetPtr = combatController->attackerHandle.get() ? 
+            combatController->attackerHandle.get() : combatController->cachedAttacker ? 
+            combatController->cachedAttacker : actorPtr->GetActorRuntimeData().currentCombatTarget.get();
+            if (!targetPtr) 
+            { 
+                continue; 
+            }
+            if (CanCircle(targetPtr.get(), actorPtr.get()))
+            {
+                AddTarget(targetPtr->GetFormID(), actorPtr->GetFormID());
             }
         }
     }
-    void CircleManager::CircleAll(CombatGroup *a_group)
+    float CircleManager::GetAttackerDuration(FormID formID)
     {
-        BSReadLockGuard lock(a_group->lock);
-        auto& combatMembers = a_group->members;
-        for(auto& combatMember : combatMembers)
-        {
-            auto* actor = combatMember.memberHandle.get().get();
-            if (!actor) { continue; }
-            PackageOverrideHook::AddOverride(actor->GetFormID());
-        }
-    }
-    void CircleManager::FreeAll(CombatGroup *a_group)
-    {
-        BSReadLockGuard lock(a_group->lock);
-        auto& combatMembers = a_group->members;
-        for(auto& combatMember : combatMembers)
-        {
-            auto* actor = combatMember.memberHandle.get().get();
-            if (!actor) { continue; }
-            PackageOverrideHook::RemoveOverride(actor->GetFormID());
-        }
-    }
-    void CircleManager::FreeNewMember(CombatGroup *a_group, std::vector<FreeMember> &circleMembers)
-    {
-        BSReadLockGuard lock(a_group->lock);
-        auto& combatMembers = a_group->members;
-        std::uniform_int_distribution<int> dist(0, a_group->members.size() - 1);
-        auto index = dist(mt);
-        auto formID = combatMembers[index].memberHandle.get()->GetFormID();
-        WriteLocker locker(dataLock);
-        currentFreeMembers++;
-        auto& newMember = circleMembers.emplace_back(FreeMember(formID, GetCircleDuration()));
-        SKSE::log::info("Unlocking actor {:X} from circle for {} seconds", newMember.formID, newMember.timeRemaining);
-    }
-    float CircleManager::GetCircleDuration()
-    {
-        std::uniform_real_distribution<double> dist(0, 15.0);
+        std::uniform_real_distribution<double> dist(Settings::GetCircling().fMinFollowUpSeconds, Settings::GetCircling().fMaxFollowUpSeconds);
         return dist(mt);
     }
-    void CircleManager::FreeMember::Free()
+    bool CircleManager::IsRangedOrMagic(Actor *a_actor)
     {
-        PackageOverrideHook::RemoveOverride(formID); 
+        auto* process = a_actor->GetActorRuntimeData().currentProcess;
+        if (!process) { return false; }
+
+        auto* left_item = process->GetEquippedLeftHand();
+        auto* right_item = process->GetEquippedRightHand();
+
+        auto left_type = GetEquippedItemType(left_item);
+        auto right_type = GetEquippedItemType(right_item);
+        return IsMagicItemType(left_type) || IsMagicItemType(right_type) || IsRangedItemType(left_type) || IsRangedItemType(right_type);
     }
-    void CircleManager::FreeMember::Circle()
+    void CircleManager::CircleGroup::SetAttacker(FormID formID)
     {
-        PackageOverrideHook::AddOverride(formID);
+        WriteLocker locker(lock);
+        auto iter = circlerMap.find(formID);
+        if (iter == circlerMap.end())
+        {
+            return;
+        }
+        iter->second.StopCircling();
+        iter->second.timeRemaining = GetAttackerDuration(formID);
+        SKSE::log::info("New attacker {:X} for {}", iter->second.formID, iter->second.timeRemaining);
+        attackerMap.insert(circlerMap.extract(iter));
+    }
+    void CircleManager::CircleGroup::UnsetAttacker(FormID formID)
+    {
+        WriteLocker locker(lock);
+        auto iter = attackerMap.find(formID);
+        if (iter == attackerMap.end())
+        {
+            return;
+        }
+        iter->second.StartCircling();
+        SKSE::log::info("Stopped attacker {:X}", iter->second.formID);
+        circlerMap.insert(attackerMap.extract(iter));
+    }
+    void CircleManager::CircleGroup::Update(float a_delta)
+    {
+        ReadLocker readLocker(lock);
+        std::vector<FormID> idsToRemove;
+        for(auto& kvp : attackerMap)
+        {
+            kvp.second.timeRemaining -= a_delta;
+            if (kvp.second.timeRemaining <= 0.f)
+            {
+                idsToRemove.emplace_back(kvp.first);
+            }
+        }
+        readLocker.unlock();
+        for(auto id : idsToRemove)
+        {
+            UnsetAttacker(id);
+        }
+        readLocker.lock();
+        size_t maxAttackers = Settings::GetCircling().iMaxAttackers;
+        if (maxAttackers <= attackerMap.size()) { return; }
+        std::vector<size_t> indices(circlerMap.size());
+        for(auto& kvp : circlerMap)
+        {
+            indices.emplace_back(kvp.first);
+        }
+        std::shuffle(indices.begin(), indices.end(), mt);
+        readLocker.unlock();
+        for(int i = attackerMap.size(); i < maxAttackers && i < indices.size(); i++)
+        {
+            SetAttacker(indices.back());
+            indices.pop_back();
+        }
     }
 }

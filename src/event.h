@@ -1,6 +1,7 @@
 #pragma once
 #include "util.h"
 #include "RE/TESPackageEvent.h"
+#include "circlemanager.h"
 namespace WaitYourTurn
 {
     class PackageEventHandler: public BSTEventSink<TESPackageEvent>
@@ -22,5 +23,23 @@ namespace WaitYourTurn
         }
     
         BSEventNotifyControl ProcessEvent(const TESPackageEvent* a_event,  BSTEventSource<TESPackageEvent>* a_eventSource) override; 
+    };
+    class CombatEventHandler: public BSTEventSink<TESCombatEvent>
+    {
+        private:
+
+        public: 
+        static CombatEventHandler* GetSingleton()
+        {
+            static CombatEventHandler singleton; 
+            return &singleton; 
+        }
+    
+        static void Register()
+        {
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESCombatEvent>(GetSingleton()); 
+        }
+    
+        BSEventNotifyControl ProcessEvent(const TESCombatEvent* a_event,  BSTEventSource<TESCombatEvent>* a_eventSource) override; 
     };
 }

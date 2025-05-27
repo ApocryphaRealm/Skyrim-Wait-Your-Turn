@@ -23,18 +23,67 @@ namespace WaitYourTurn
             switch(a_event->eventType)
             {
                 case EventType::kPackageStart:
-                    high->SetHeadtrackTarget(HEAD_TRACK::kCombat, target);
+                    SKSE::log::info("Overriding headtracking for {}", actor->GetName());
+                    high->pathLookAtTarget = actor->GetActorRuntimeData().currentCombatTarget;
+                    // high->SetHeadtrackTarget(HEAD_TRACK::kCombat, target);
                     break;
                 case EventType::kPackageChange:
-                    high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
+                    SKSE::log::info("Overriding headtracking for {}", actor->GetName());
+                    high->pathLookAtTarget = ActorHandle();
+                    // high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
                     break;
                 case EventType::kPackageEnd:
-                    high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
+                    SKSE::log::info("Overriding headtracking for {}", actor->GetName());
+                    high->pathLookAtTarget = ActorHandle();
+                    // high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
                     break;
             }
 
         }
         return BSEventNotifyControl::kContinue;
     }
+    BSEventNotifyControl CombatEventHandler::ProcessEvent(const TESCombatEvent *a_event, BSTEventSource<TESCombatEvent> *a_eventSource)
+    {
+        auto actor = a_event->actor; 
+        auto targetActor = a_event->targetActor;
+        if (a_event->newState == ACTOR_COMBAT_STATE::kNone)
+        {
+            if (actor)
+            {
+                CircleManager::RemoveTarget(actor->GetFormID());
+            }
+            if (targetActor)
+            {
+                CircleManager::RemoveTarget(targetActor->GetFormID());
+            }
+            auto* player = PlayerCharacter::GetSingleton();
+            
+            if (player && !player->GetCombatGroup())
+            {
+                CircleManager::RemoveTarget(player->GetFormID());
+            }
+        }
+        // if (a_event->newState == ACTOR_COMBAT_STATE::kCombat)
+        // {
+        //     if (actor && targetActor && actor && CircleManager::CanCircle(targetActor->As<Actor>(), actor->As<Actor>()))
+        //     {
+        //         CircleManager::AddTarget(targetActor->GetFormID(), actor->GetFormID());
+        //     }
+        //     auto* player = PlayerCharacter::GetSingleton();
+        //     if (player && player->GetCombatGroup())
+        //     {
+        //         auto* combatGroup = player->GetCombatGroup();
+        //         BSReadLockGuard locker(combatGroup->lock);
+        //         for(auto& target : combatGroup->targets)
+        //         {
+        //             auto targetPtr = target.targetHandle.get();
+        //             if (targetPtr && player->IsCombatTarget(targetPtr.get()) && CircleManager::CanCircle(player, targetPtr.get()))
+        //             {
+        //                 CircleManager::AddTarget()
+        //             }
+        //         }
+        //     }
+        // }
+        return Control::kContinue;
+    }
 }
-
