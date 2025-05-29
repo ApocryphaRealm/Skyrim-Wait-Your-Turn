@@ -62,9 +62,10 @@ namespace WaitYourTurn
             _Update = trampoline.write_call<5>(target.address(), Update);
         }
         //Up	p	Actor__KillImpl_140603B30+8C9	call    UpdateAllyKilled_14076C600
+        //Up	p	sub_1406972D0+96A	call    sub_140806180
         static void InstallMemberKilledHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(36872, 0), REL::Relocate(0x8C9, 0) };
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(36872, 37896), REL::Relocate(0x8C9, 0x96A) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _NotifyMemberKilled = trampoline.write_call<5>(target.address(), NotifyMemberKilled);
@@ -73,9 +74,10 @@ namespace WaitYourTurn
         static inline REL::Relocation<decltype(NotifyMemberKilled)> _NotifyMemberKilled;
 
         //Up	p	sub_1404FD8F0+B3	call    sub_14076C500
+        //Up	p	sub_140558FC0+98	call    sub_140806090
         static void InstallMemberAttackedHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32473, 0), REL::Relocate(0xB3, 0) };
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32473, 33220), REL::Relocate(0xB3, 0x98) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _NotifyMemberAttacked = trampoline.write_call<5>(target.address(), NotifyMemberAttacked);
