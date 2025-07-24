@@ -26,15 +26,17 @@ namespace WaitYourTurn
             using Lock = std::shared_mutex;
             using ReadLocker = std::shared_lock<Lock>;
             using WriteLocker = std::unique_lock<Lock>;
-
+            bool allowAttackers{ true };
             public:
             static inline Lock lock;
             
             std::unordered_map<FormID, CircleMember> circlerMap;
             std::unordered_map<FormID, CircleMember> attackerMap;
             void SetAttacker(FormID formID);
+            void SetDefender(FormID formID);
             void UnsetAttacker(FormID formID);
             void Update(float a_delta);
+            void AllowAttackers(bool state);
         };
 
 
@@ -45,6 +47,8 @@ namespace WaitYourTurn
         static void AddTarget(FormID targetID, FormID combatMemberID);
         static void RemoveTarget(FormID targetID);
         static void RemoveCombatant(FormID targetID, FormID actorId);
+        static void AllowCombatantDefense(FormID targetID, FormID actorID);
+        static void AllowAttackers(FormID targetID, bool state); 
 
         static bool IsBeingCircled(Actor* a_target);
         static bool CanCircle(Actor* a_target, Actor* a_combatant);
@@ -60,8 +64,14 @@ namespace WaitYourTurn
         static inline std::mt19937 mt{rd()};
         // static inline std::unordered_set<FormID> unlockActors;
         static inline std::unordered_map<FormID, CircleGroup> circleGroupMap;
-        static float GetAttackerDuration(FormID formID);
+        static float GetAttackerDuration();
+        static float GetDefenderDuration();
         static bool IsRangedOrMagic(Actor* a_actor);
+        static inline bool IsHumanoid(Actor* a_actor)
+        {
+            auto bodyPartData = a_actor->GetRace() ? a_actor->GetRace()->bodyPartData : nullptr;
+            return bodyPartData && bodyPartData->GetFormID() == 0x1d;
+        }
         static inline bool IsRangedItemType(uint16_t type)
         {
             return (type == 7 || type == 12);

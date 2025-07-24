@@ -6,16 +6,34 @@ namespace WaitYourTurn
     void CircleManager::CircleMember::StopCircling()
     {
         PackageOverrideHook::RemoveOverride(formID); 
-        auto* actor = TESForm::LookupByID<Actor>(formID);
-        SKSE::log::info("{} stopped circling", actor->GetName());
-        if (actor) {actor->EvaluatePackage(true, false);}
+        auto id = formID;
+        auto* tasks = SKSE::GetTaskInterface();
+        if (!tasks) { return; }
+        tasks->AddTask([id]() 
+        {
+            auto* actor = TESForm::LookupByID<Actor>(id);
+            if (actor && !actor->IsDead())
+            {
+                SKSE::log::info("{} stopped circling", actor->GetName());
+                actor->EvaluatePackage(true, false);
+            }
+        });
     }
     void CircleManager::CircleMember::StartCircling()
     {
         PackageOverrideHook::AddOverride(formID);
-        auto* actor = TESForm::LookupByID<Actor>(formID);
-        SKSE::log::info("{} started circling", actor->GetName());
-        if (actor) {actor->EvaluatePackage(true, false);}
+        auto id = formID;
+        auto* tasks = SKSE::GetTaskInterface();
+        if (!tasks) { return; }
+        tasks->AddTask([id]() 
+        {
+            auto* actor = TESForm::LookupByID<Actor>(id);
+            if (actor && !actor->IsDead())
+            {
+                SKSE::log::info("{} started circling", actor->GetName());
+                actor->EvaluatePackage(true, false);
+            }
+        });
     }
     CircleManager::CircleMember::~CircleMember()
     {
@@ -82,9 +100,22 @@ namespace WaitYourTurn
     }
     bool CircleManager::CanCircle(Actor *a_target, Actor *a_combatant)
     {
-        return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat) &&
-        (!a_combatant->IsPlayerRef()) && (a_target->IsPlayerRef() || !Settings::GetCircling().bPlayerOnly) && 
-        !IsRangedOrMagic(a_combatant);
+        return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat) 
+        && (!a_combatant->IsPlayerRef()) 
+        && (a_target->IsPlayerRef() 
+        || ((!Settings::GetCircling().bPlayerOnly 
+            || (a_combatant->IsPlayerTeammate() && Settings::GetCircling().bIncludeFollowers)) 
+            && !(a_target->GetCurrentScene() 
+                && a_target->GetCurrentScene()->isPlaying 
+                && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))))
+        && !IsRangedOrMagic(a_combatant) 
+        && IsHumanoid(a_combatant) 
+        && !(a_combatant->GetCurrentScene() 
+            && a_combatant->GetCurrentScene()->isPlaying 
+            && !a_combatant->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))
+        && !(a_target->GetCurrentScene() 
+            && a_target->GetCurrentScene()->isPlaying 
+            && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible));
     }
     void CircleManager::RemoveTarget(FormID targetID)
     {
@@ -107,6 +138,30 @@ namespace WaitYourTurn
         WriteLocker groupLocker(group.lock);
         group.attackerMap.erase(actorID);
         group.circlerMap.erase(actorID);
+    }
+    void CircleManager::AllowCombatantDefense(FormID targetID, FormID actorID)
+    {
+        WriteLocker writeLocker(dataLock);
+        auto result = circleGroupMap.find(targetID);
+        if (result == circleGroupMap.end())
+        {
+            SKSE::log::info("Target {:X} not found to defend combatant {:X}", targetID, actorID);
+            return;
+        }
+        auto& group = result->second;
+        group.SetDefender(actorID);
+    }
+    void CircleManager::AllowAttackers(FormID targetID, bool state)
+    {
+        ReadLocker readLocker(dataLock);
+        auto result = circleGroupMap.find(targetID);
+        if (result == circleGroupMap.end())
+        {
+            SKSE::log::info("Target {:X} not found to lock attackers", targetID);
+            return;
+        }
+        auto& group = result->second;
+        group.AllowAttackers(state);
     }
     void CircleManager::LoadCircleGroups()
     {
@@ -144,9 +199,14 @@ namespace WaitYourTurn
             }
         }
     }
-    float CircleManager::GetAttackerDuration(FormID formID)
+    float CircleManager::GetAttackerDuration()
     {
         std::uniform_real_distribution<double> dist(Settings::GetCircling().fMinFollowUpSeconds, Settings::GetCircling().fMaxFollowUpSeconds);
+        return dist(mt);
+    }
+    float CircleManager::GetDefenderDuration()
+    {
+        std::uniform_real_distribution<double> dist(Settings::GetCircling().fMinDefenseSeconds, Settings::GetCircling().fMaxDefenseSeconds);
         return dist(mt);
     }
     bool CircleManager::IsRangedOrMagic(Actor *a_actor)
@@ -170,8 +230,21 @@ namespace WaitYourTurn
             return;
         }
         iter->second.StopCircling();
-        iter->second.timeRemaining = GetAttackerDuration(formID);
+        iter->second.timeRemaining = GetAttackerDuration();
         SKSE::log::info("New attacker {:X} for {}", iter->second.formID, iter->second.timeRemaining);
+        attackerMap.insert(circlerMap.extract(iter));
+    }
+    void CircleManager::CircleGroup::SetDefender(FormID formID)
+    {
+        WriteLocker locker(lock);
+        auto iter = circlerMap.find(formID);
+        if (iter == circlerMap.end())
+        {
+            return;
+        }
+        iter->second.StopCircling();
+        iter->second.timeRemaining = GetDefenderDuration();
+        SKSE::log::info("New defender {:X} for {}", iter->second.formID, iter->second.timeRemaining);
         attackerMap.insert(circlerMap.extract(iter));
     }
     void CircleManager::CircleGroup::UnsetAttacker(FormID formID)
@@ -205,7 +278,7 @@ namespace WaitYourTurn
         }
         readLocker.lock();
         size_t maxAttackers = Settings::GetCircling().iMaxAttackers;
-        if (maxAttackers <= attackerMap.size()) { return; }
+        if (!allowAttackers || maxAttackers <= attackerMap.size()) { return; }
         std::vector<size_t> indices(circlerMap.size());
         for(auto& kvp : circlerMap)
         {
@@ -217,6 +290,24 @@ namespace WaitYourTurn
         {
             SetAttacker(indices.back());
             indices.pop_back();
+        }
+    }
+    void CircleManager::CircleGroup::AllowAttackers(bool state)
+    {
+        WriteLocker locker(lock);
+        allowAttackers = state;
+        if (!allowAttackers)
+        {
+            std::vector<FormID> idsToRemove;
+            for(auto& kvp : attackerMap)
+            {
+                idsToRemove.emplace_back(kvp.first);
+            }
+            locker.unlock();
+            for(auto id : idsToRemove)
+            {
+                UnsetAttacker(id);
+            }
         }
     }
 }

@@ -37,7 +37,31 @@ namespace WaitYourTurn
         static inline Lock dataLock;
         static inline std::unordered_set<FormID> overrideActors;
     };
+    class CombatRangeHook
+    {
+        public:
 
+        static void Install()
+        {
+/*Direction	Type	Address	Text
+Up	p	sub_1406D20A0+61	call    TESObjectREFR__sub_1407BF1B0 npcs only
+Up	p	sub_140782AA0+193	call    TESObjectREFR__sub_1407BF1B0
+Down	p	sub_140826F60+1E3	call    TESObjectREFR__sub_1407BF1B0 x
+
+Direction	Type	Address	Text
+Up	p	sub_1407663A0+126	call    sub_140856200
+Up	p	sub_14081ECC0+13F	call    sub_140856200
+	p	sub_1408BE880+213	call    sub_140856200
+*/  
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(40259, 41261), REL::Relocate(0x61, 0x126) };
+            auto& trampoline = SKSE::GetTrampoline();
+            SKSE::AllocTrampoline(14);
+            _IsInAttackRange = trampoline.write_call<5>(target.address(), IsInAttackRange);
+        }
+        private:
+        static bool IsInAttackRange(Actor *a_attacker, Actor *a_target, float a_extend);
+        static inline REL::Relocation<decltype(IsInAttackRange)> _IsInAttackRange; 
+    };
     class CombatGroupHook
     {
         public:
@@ -45,7 +69,8 @@ namespace WaitYourTurn
         static void Install()
         {
             InstallUpdateHook();
-            InstallMemberKilledHook();
+            InstallRemoveMemberHook();
+            // InstallMemberKilledHook();
             InstallMemberAttackedHook();
             // InstallStopCombatHook();
             // InstallSetCombatGroupHook();
@@ -99,6 +124,23 @@ namespace WaitYourTurn
             _SetCombatGroup = actorVtbl.write_vfunc(0xD5, SetCombatGroup);
         }
 
+        static void InstallRemoveMemberHook()
+        {
+            //Up	p	sub_1404FCDE0+164	call    sub_14076AA00
+            //	p	sub_140558500+147	call    sub_140804330
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32468, 33215), REL::Relocate(0x164, 0x147) };
+            //Down	p	sub_1407A81B0+3F	call    sub_14076AA00
+            // REL::Relocation<std::uintptr_t> target2 { REL::RelocationID(45600, 0), REL::Relocate(0x3F, 0x0) };
+            //Down	p	sub_140771B70+274	call    sub_14076AA00
+            // REL::Relocation<std::uintptr_t> target3 { REL::RelocationID(43559, 0), REL::Relocate(0x274, 0x0) };
+            auto& trampoline = SKSE::GetTrampoline();
+            SKSE::AllocTrampoline(16);
+
+            _RemoveMember = trampoline.write_call<5>(target.address(), RemoveMember);
+            // _RemoveMember2 = trampoline.write_call<5>(target2.address(), RemoveMember2);
+            // _RemoveMember3 = trampoline.write_call<5>(target3.address(), RemoveMember3);
+
+        }
         
         static void Update(CombatGroup* a_group); 
         static inline REL::Relocation<decltype(Update)> _Update; 
@@ -111,6 +153,13 @@ namespace WaitYourTurn
 
         //Up	p	sub_14076A2F0+65	call    sub_140772CD0 43481
 
+        static void RemoveMember(CombatGroup* a_group, Actor* a_actor);
+        static void RemoveMember2(CombatGroup* a_group, Actor* a_actor);
+        static void RemoveMember3(CombatGroup* a_group, Actor* a_actor);
+
+        static inline REL::Relocation<decltype(RemoveMember)> _RemoveMember;
+        static inline REL::Relocation<decltype(RemoveMember2)> _RemoveMember2; 
+        static inline REL::Relocation<decltype(RemoveMember3)> _RemoveMember3; 
 
 
         using Lock = std::shared_mutex;
@@ -154,5 +203,31 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         static inline REL::Relocation<decltype(SetTarget2)> _SetTarget2;
         static inline REL::Relocation<decltype(AttackedBy)> _AttackedBy;
         
+    };
+
+    class RaceTransformHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> WerewolfEffectVtbl { VTABLE_WerewolfEffect[0] };
+            REL::Relocation<std::uintptr_t> VampireLordEffectVtbl { VTABLE_VampireLordEffect[0] };
+
+            _StartWerewolf = WerewolfEffectVtbl.write_vfunc(0x14, StartWerewolf);
+            _FinishWerewolf = WerewolfEffectVtbl.write_vfunc(0x15, FinishWerewolf);
+
+            _StartVampire = VampireLordEffectVtbl.write_vfunc(0x14, StartVampire);
+            _FinishVampire = VampireLordEffectVtbl.write_vfunc(0x15, FinishVampire);
+        }
+
+        static void StartWerewolf(WerewolfEffect* a_effect);
+        static void FinishWerewolf(WerewolfEffect* a_effect);
+        static void StartVampire(VampireLordEffect* a_effect);
+        static void FinishVampire(VampireLordEffect* a_effect);
+
+        static inline REL::Relocation<decltype(StartWerewolf)> _StartWerewolf; 
+        static inline REL::Relocation<decltype(FinishWerewolf)> _FinishWerewolf; 
+        static inline REL::Relocation<decltype(StartVampire)> _StartVampire; 
+        static inline REL::Relocation<decltype(FinishVampire)> _FinishVampire;
     };
 }

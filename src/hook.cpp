@@ -41,28 +41,32 @@ namespace WaitYourTurn
     void CombatGroupHook::NotifyMemberKilled(CombatGroup *a_group, Actor *a_member, Actor *a_killer)
     {
         _NotifyMemberKilled(a_group, a_killer, a_member);
-        SKSE::log::info("Member {} ({:X}) killed by {} ({:X})", a_member->GetName(), a_member->GetFormID(), a_killer->GetName(), a_killer->GetFormID());
-        if (CircleManager::IsBeingCircled(a_killer))
-        {
-            CircleManager::RemoveCombatant(a_killer->GetFormID(), a_member->GetFormID());
-        }
-        if (!a_group) { return; }
-        BSReadLockGuard readLock(a_group->lock);
-        auto& targets = a_group->targets;
-        for(auto& target : targets)
-        {
-            auto* targetActor = target.targetHandle.get().get();
-            if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
-            CircleManager::RemoveCombatant(targetActor->GetFormID(), a_member->GetFormID());
-        }
+        // if (!a_member || !a_killer) 
+        // {
+        //     return; 
+        // }
+        // SKSE::log::info("Member {} ({:X}) killed {} ({:X})", a_member->GetName(), a_member->GetFormID(), a_killer->GetName(), a_killer->GetFormID());
+        // if (CircleManager::IsBeingCircled(a_killer))
+        // {
+        //     CircleManager::RemoveCombatant(a_killer->GetFormID(), a_member->GetFormID());
+        // }
+        // if (!a_group) { return; }
+        // BSReadLockGuard readLock(a_group->lock);
+        // auto& targets = a_group->targets;
+        // for(auto& target : targets)
+        // {
+        //     auto* targetActor = target.targetHandle.get().get();
+        //     if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
+        //     CircleManager::RemoveCombatant(targetActor->GetFormID(), a_member->GetFormID());
+        // }
     }
     void CombatGroupHook::NotifyMemberAttacked(CombatGroup *a_group, Actor *a_member, Actor *a_attacker)
     {
-        _NotifyMemberAttacked(a_group, a_member, a_attacker);
-        if (PackageOverrideHook::HasOverride(a_member->GetFormID()))
+        if (a_attacker && a_member && CircleManager::IsBeingCircled(a_attacker) && PackageOverrideHook::HasOverride(a_member->GetFormID()))
         {
-            a_member->NotifyAnimationGraph("blockStart");
+            CircleManager::AllowCombatantDefense(a_attacker->GetFormID(), a_member->GetFormID());
         }
+        _NotifyMemberAttacked(a_group, a_member, a_attacker);
     }
     void CombatGroupHook::Update(CombatGroup *a_group)
     {
@@ -148,6 +152,54 @@ namespace WaitYourTurn
         }
         return _SetCombatGroup(a_actor, a_group);
     }
+    void CombatGroupHook::RemoveMember(CombatGroup *a_group, Actor *a_actor)
+    {
+        if (a_group && a_actor)
+        {
+            BSReadLockGuard readLock(a_group->lock);
+            auto& targets = a_group->targets;
+            for(auto& target : targets)
+            {
+                auto* targetActor = target.targetHandle.get().get();
+                if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
+                SKSE::log::info("Remove member {}", a_actor->GetName());
+                CircleManager::RemoveCombatant(targetActor->GetFormID(), a_actor->GetFormID());
+            }
+        }
+        _RemoveMember(a_group, a_actor);
+    }
+    void CombatGroupHook::RemoveMember2(CombatGroup *a_group, Actor *a_actor)
+    {
+        if (a_group && a_actor)
+        {
+            SKSE::log::info("Remove member 2 {}", a_actor->GetName());
+            BSReadLockGuard readLock(a_group->lock);
+            auto& targets = a_group->targets;
+            for(auto& target : targets)
+            {
+                auto* targetActor = target.targetHandle.get().get();
+                if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
+                CircleManager::RemoveCombatant(targetActor->GetFormID(), a_actor->GetFormID());
+            }
+        }
+        _RemoveMember2(a_group, a_actor);
+    }
+    void CombatGroupHook::RemoveMember3(CombatGroup *a_group, Actor *a_actor)
+    {
+        if (a_group && a_actor)
+        {
+            SKSE::log::info("Remove member 3 {}", a_actor->GetName());
+            BSReadLockGuard readLock(a_group->lock);
+            auto& targets = a_group->targets;
+            for(auto& target : targets)
+            {
+                auto* targetActor = target.targetHandle.get().get();
+                if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
+                CircleManager::RemoveCombatant(targetActor->GetFormID(), a_actor->GetFormID());
+            }
+        }
+        _RemoveMember3(a_group, a_actor);
+    }
     void CombatControllerHook::SetTarget(CombatController *a_controller, Actor *a_target)
     {
         auto combatant = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
@@ -201,5 +253,81 @@ namespace WaitYourTurn
         {
             a_target->NotifyAnimationGraph("blockStart");
         }
+    }
+    bool CombatRangeHook::IsInAttackRange(Actor *a_attacker, Actor *a_target, float a_extend)
+    {
+        auto result = _IsInAttackRange(a_attacker, a_target, a_extend);
+        if (a_attacker && a_target)
+        {
+            if (result && CircleManager::IsBeingCircled(a_attacker) && PackageOverrideHook::HasOverride(a_target->GetFormID()))
+            {
+                a_target->NotifyAnimationGraph("blockStart");
+                return result;
+            }
+            if (CircleManager::IsBeingCircled(a_target) && PackageOverrideHook::HasOverride(a_attacker->GetFormID()))
+            {
+                if (_IsInAttackRange(a_target, a_attacker, 0.0))
+                {
+                    a_attacker->NotifyAnimationGraph("blockStart");
+                }
+                else if (a_attacker->IsBlocking())
+                {
+                    a_attacker->NotifyAnimationGraph("blockStop");
+                }
+            }
+        }
+        return result;
+    }
+    void RaceTransformHook::StartWerewolf(WerewolfEffect *a_effect)
+    {
+        _StartWerewolf(a_effect);
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
+        if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
+        CircleManager::AllowAttackers(target_actor->GetFormID(), false);
+        SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
+    }
+    void RaceTransformHook::FinishWerewolf(WerewolfEffect *a_effect)
+    {
+        _FinishWerewolf(a_effect);
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
+        if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
+        CircleManager::AllowAttackers(target_actor->GetFormID(), true);
+        SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
+    }
+    void RaceTransformHook::StartVampire(VampireLordEffect *a_effect)
+    {
+        _StartVampire(a_effect);
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
+        if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
+        CircleManager::AllowAttackers(target_actor->GetFormID(), false);
+        SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
+    }
+    void RaceTransformHook::FinishVampire(VampireLordEffect *a_effect)
+    {
+        _FinishVampire(a_effect);
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
+        if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
+        CircleManager::AllowAttackers(target_actor->GetFormID(), true);
+        SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
     }
 }

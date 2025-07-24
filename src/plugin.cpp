@@ -37,6 +37,8 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	PackageOverrideHook::Install();
 	CombatGroupHook::Install();
 	CombatControllerHook::Install();
+	CombatRangeHook::Install();
+	RaceTransformHook::Install();
     auto messaging = SKSE::GetMessagingInterface();
 	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
 		return false;
