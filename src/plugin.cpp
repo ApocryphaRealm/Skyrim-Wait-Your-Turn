@@ -16,6 +16,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
         PackageOverrideHook::Load();
 		PackageEventHandler::Register();
 		CombatEventHandler::Register();
+		CircleManager::Load();
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
 		break;

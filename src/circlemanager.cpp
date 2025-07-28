@@ -12,11 +12,9 @@ namespace WaitYourTurn
         tasks->AddTask([id]() 
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
-            if (actor && !actor->IsDead())
-            {
-                SKSE::log::info("{} stopped circling", actor->GetName());
-                actor->EvaluatePackage(true, false);
-            }
+            if (!actor || actor->IsDead()) { return; }
+            SKSE::log::info("{} stopped circling", actor->GetName());
+            actor->EvaluatePackage(true, false);
         });
     }
     void CircleManager::CircleMember::StartCircling()
@@ -28,11 +26,9 @@ namespace WaitYourTurn
         tasks->AddTask([id]() 
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
-            if (actor && !actor->IsDead())
-            {
-                SKSE::log::info("{} started circling", actor->GetName());
-                actor->EvaluatePackage(true, false);
-            }
+            if (!actor || actor->IsDead()) { return; }
+            SKSE::log::info("{} started circling", actor->GetName());
+            actor->EvaluatePackage(true, false);
         });
     }
     CircleManager::CircleMember::~CircleMember()
@@ -90,8 +86,40 @@ namespace WaitYourTurn
         }
         newCircleGroup = &result->second;
         if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
+        SetupTarget(targetID, combatMemberID);
         result->second.circlerMap.emplace(combatMemberID, combatMemberID);
         SKSE::log::info("Added combatant {:X} to target {:X}", combatMemberID, targetID);
+    }
+    void CircleManager::SetupTarget(FormID targetID, FormID combatMemberID)
+    {
+        auto* actor = TESForm::LookupByID<Actor>(combatMemberID);
+        auto* target = TESForm::LookupByID<Actor>(targetID);
+        if (!target || !actor) { return; }
+
+        auto *extraDataList = &actor->extraList;
+        if (!extraDataList)
+        {
+            return;
+        }
+
+        auto *linkedRefs = extraDataList->GetByType<ExtraLinkedRef>();
+        if (!linkedRefs)
+        {
+            linkedRefs = BSExtraData::Create<ExtraLinkedRef>();
+            extraDataList->Add(linkedRefs);
+        }
+        for(auto& linkedRef : linkedRefs->linkedRefs)
+        {
+            if (linkedRef.keyword && linkedRef.keyword->GetFormID() == circleTargetKeyword->GetFormID())
+            {
+                linkedRef.refr = target;
+                return;
+            }
+        }
+        ExtraLinkedRef::LinkedRef linkedRef;
+        linkedRef.keyword = circleTargetKeyword;
+        linkedRef.refr = target;
+        linkedRefs->linkedRefs.emplace_back(linkedRef); 
     }
     bool CircleManager::IsBeingCircled(Actor *a_target)
     {

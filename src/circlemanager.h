@@ -45,6 +45,7 @@ namespace WaitYourTurn
         static void UpdateTarget(FormID actorId);
         static void ChangeTarget(FormID targetID, FormID lastTargetID, FormID combatMemberID);
         static void AddTarget(FormID targetID, FormID combatMemberID);
+        static void SetupTarget(FormID targetID, FormID combatMemberID); 
         static void RemoveTarget(FormID targetID);
         static void RemoveCombatant(FormID targetID, FormID actorId);
         static void AllowCombatantDefense(FormID targetID, FormID actorID);
@@ -55,6 +56,11 @@ namespace WaitYourTurn
 
         static void LoadCircleGroups();
 
+        static void Load()
+        {
+            circleTargetKeyword = FormUtil::Parse::GetFormFromMod(0x802, "WaitYourTurnRedux.esp")->As<BGSKeyword>(); 
+        }
+
         private:
         using Lock = std::shared_mutex;
         using ReadLocker = std::shared_lock<Lock>;
@@ -62,6 +68,8 @@ namespace WaitYourTurn
         static inline Lock dataLock;
         static inline std::random_device rd;
         static inline std::mt19937 mt{rd()};
+        static inline BGSKeyword* circleTargetKeyword = nullptr; 
+
         // static inline std::unordered_set<FormID> unlockActors;
         static inline std::unordered_map<FormID, CircleGroup> circleGroupMap;
         static float GetAttackerDuration();
