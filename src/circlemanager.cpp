@@ -5,57 +5,26 @@ namespace WaitYourTurn
     using HEAD_TRACK = HighProcessData::HEAD_TRACK_TYPES::HEAD_TRACK_TYPE;
     void CircleManager::CircleMember::StopCircling()
     {
-        PackageOverrideHook::RemoveOverride(formID); 
         auto id = formID;
         auto* tasks = SKSE::GetTaskInterface();
         if (!tasks) { return; }
         tasks->AddTask([id]() 
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
-            if (!actor || actor->IsDead() || actor->IsDisabled() || !actor->IsAIEnabled()) { return; }
-            SKSE::log::info("{} stopped circling", actor->GetName());
-            auto *high = actor->GetHighProcess();
-            if (high)
-            {
-                high->pathLookAtTarget = ActorHandle();
-            }
-            actor->EvaluatePackage(true, false);
-
-            auto *extraDataList = &actor->extraList;
-            if (!extraDataList)
-            {
-                return;
-            }
-
-            auto *linkedRefs = extraDataList->GetByType<ExtraLinkedRef>();
-            if (!linkedRefs)
-            {
-                return;
-            }
-            size_t removeIndex = 0;
-            for (auto it = linkedRefs->linkedRefs.begin(); it != linkedRefs->linkedRefs.end(); it++)
-            {
-                auto &linkedRef = *it;
-                if (linkedRef.keyword && linkedRef.keyword->GetFormID() == circleTargetKeyword->GetFormID())
-                {
-                    it = linkedRefs->linkedRefs.erase(it);
-                    break;
-                }
-            }
+            if (!actor) { return; }
+            actor->GetActorRuntimeData().boolFlags.reset(Actor::BOOL_FLAGS::kAttackingDisabled);
         });
     }
     void CircleManager::CircleMember::StartCircling()
     {
-        PackageOverrideHook::AddOverride(formID);
         auto id = formID;
         auto* tasks = SKSE::GetTaskInterface();
         if (!tasks) { return; }
         tasks->AddTask([id]() 
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
-            if (!actor || actor->IsDead()) { return; }
-            SKSE::log::info("{} started circling", actor->GetName());
-            actor->EvaluatePackage(true, false);
+            if (!actor) { return; }
+            actor->GetActorRuntimeData().boolFlags.set(Actor::BOOL_FLAGS::kAttackingDisabled);
         });
     }
     CircleManager::CircleMember::~CircleMember()
@@ -164,13 +133,13 @@ namespace WaitYourTurn
                 && a_target->GetCurrentScene()->isPlaying 
                 && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))))
         && !IsRangedOrMagic(a_combatant) 
-        && IsHumanoid(a_combatant) 
-        && !(a_combatant->GetCurrentScene() 
-            && a_combatant->GetCurrentScene()->isPlaying 
-            && !a_combatant->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))
-        && !(a_target->GetCurrentScene() 
-            && a_target->GetCurrentScene()->isPlaying 
-            && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible));
+        && IsHumanoid(a_combatant); 
+        // && !(a_combatant->GetCurrentScene() 
+        //     && a_combatant->GetCurrentScene()->isPlaying 
+        //     && !a_combatant->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))
+        // && !(a_target->GetCurrentScene() 
+        //     && a_target->GetCurrentScene()->isPlaying 
+        //     && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible));
     }
     void CircleManager::StopAllCircling(Actor *a_target)
     {
@@ -194,6 +163,28 @@ namespace WaitYourTurn
             }
             CircleManager::RemoveCombatant(targetActor->GetFormID(), a_target->GetFormID());
         }
+    }
+    void CircleManager::StopAllCircling(Actor *a_target, CombatGroup *a_group)
+    {
+        if (!a_target)
+        {
+            return;
+        }
+        CircleManager::RemoveTarget(a_target->GetFormID());
+        if (!a_group)
+        {
+            return;
+        }
+        RE::BSWriteLockGuard locker(a_group->lock);
+        for (auto &target : a_group->targets)
+        {
+            auto *targetActor = target.targetHandle.get().get();
+            if (!targetActor || !CircleManager::IsBeingCircled(targetActor))
+            {
+                continue;
+            }
+            CircleManager::RemoveCombatant(targetActor->GetFormID(), a_target->GetFormID());
+        }  
     }
     void CircleManager::RemoveTarget(FormID targetID)
     {
@@ -252,6 +243,19 @@ namespace WaitYourTurn
         }
         auto& group = result->second; 
         return group.GetAllowAttackers(); 
+    }
+    bool CircleManager::IsTargetCombatantPair(FormID targetID, FormID combatMemberID)
+    {
+        ReadLocker readLocker(dataLock);
+        auto result = circleGroupMap.find(targetID);
+        if (result == circleGroupMap.end())
+        {
+            return false;
+        }
+        readLocker.unlock();
+        auto& group = result->second;
+        ReadLocker groupLocker(group.lock);
+        return group.circlerMap.contains(combatMemberID) || group.attackerMap.contains(combatMemberID);
     }
     void CircleManager::LoadCircleGroups()
     {

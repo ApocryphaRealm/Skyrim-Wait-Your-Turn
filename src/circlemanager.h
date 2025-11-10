@@ -52,10 +52,12 @@ namespace WaitYourTurn
         static void AllowCombatantDefense(FormID targetID, FormID actorID);
         static void AllowAttackers(FormID targetID, bool state); 
         static bool GetAllowAttackers(FormID targetID);
+        static bool IsTargetCombatantPair(FormID targetID, FormID combatMemberID);
 
         static bool IsBeingCircled(Actor* a_target);
         static bool CanCircle(Actor* a_target, Actor* a_combatant);
         static void StopAllCircling(Actor* a_target);
+        static void StopAllCircling(Actor* a_target, CombatGroup* a_group); 
         static void LoadCircleGroups();
 
         static void Load()

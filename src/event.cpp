@@ -62,27 +62,27 @@ namespace WaitYourTurn
                 CircleManager::RemoveTarget(player->GetFormID());
             }
         }
-        // if (a_event->newState == ACTOR_COMBAT_STATE::kCombat)
-        // {
-        //     if (actor && targetActor && actor && CircleManager::CanCircle(targetActor->As<Actor>(), actor->As<Actor>()))
-        //     {
-        //         CircleManager::AddTarget(targetActor->GetFormID(), actor->GetFormID());
-        //     }
-        //     auto* player = PlayerCharacter::GetSingleton();
-        //     if (player && player->GetCombatGroup())
-        //     {
-        //         auto* combatGroup = player->GetCombatGroup();
-        //         BSReadLockGuard locker(combatGroup->lock);
-        //         for(auto& target : combatGroup->targets)
-        //         {
-        //             auto targetPtr = target.targetHandle.get();
-        //             if (targetPtr && player->IsCombatTarget(targetPtr.get()) && CircleManager::CanCircle(player, targetPtr.get()))
-        //             {
-        //                 CircleManager::AddTarget()
-        //             }
-        //         }
-        //     }
-        // }
+        if (a_event->newState == ACTOR_COMBAT_STATE::kCombat)
+        {
+            if (actor && targetActor && actor && CircleManager::CanCircle(targetActor->As<Actor>(), actor->As<Actor>()))
+            {
+                CircleManager::AddTarget(targetActor->GetFormID(), actor->GetFormID());
+            }
+            auto* player = PlayerCharacter::GetSingleton();
+            if (player && player->GetCombatGroup())
+            {
+                auto* combatGroup = player->GetCombatGroup();
+                BSReadLockGuard locker(combatGroup->lock);
+                for(auto& target : combatGroup->targets)
+                {
+                    auto targetPtr = target.targetHandle.get();
+                    if (targetPtr && player->IsCombatTarget(targetPtr.get()) && CircleManager::CanCircle(player, targetPtr.get()))
+                    {
+                        CircleManager::AddTarget(player->GetFormID(), targetPtr->GetFormID());
+                    }
+                }
+            }
+        }
         return Control::kContinue;
     }
     BSEventNotifyControl CellAttachDetachEventHandler::ProcessEvent(const TESCellAttachDetachEvent *a_event, BSTEventSource<TESCellAttachDetachEvent> *a_eventSource)

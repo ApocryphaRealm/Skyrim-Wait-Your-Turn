@@ -62,7 +62,7 @@ namespace WaitYourTurn
     }
     void CombatGroupHook::NotifyMemberAttacked(CombatGroup *a_group, Actor *a_member, Actor *a_attacker)
     {
-        if (a_attacker && a_member && CircleManager::IsBeingCircled(a_attacker) && PackageOverrideHook::HasOverride(a_member->GetFormID()))
+        if (a_attacker && a_member && CircleManager::IsBeingCircled(a_attacker) && CircleManager::IsTargetCombatantPair(a_attacker->GetFormID(), a_member->GetFormID()))
         {
             CircleManager::AllowCombatantDefense(a_attacker->GetFormID(), a_member->GetFormID());
         }
@@ -273,12 +273,12 @@ namespace WaitYourTurn
         auto result = _IsInAttackRange(a_attacker, a_target, a_extend);
         if (a_attacker && a_target)
         {
-            if (result && CircleManager::IsBeingCircled(a_attacker) && PackageOverrideHook::HasOverride(a_target->GetFormID()))
+            if (result && CircleManager::IsBeingCircled(a_attacker) && CircleManager::IsTargetCombatantPair(a_attacker->GetFormID(), a_target->GetFormID()))
             {
                 a_target->NotifyAnimationGraph("blockStart");
                 return result;
             }
-            if (CircleManager::IsBeingCircled(a_target) && PackageOverrideHook::HasOverride(a_attacker->GetFormID()))
+            if (CircleManager::IsBeingCircled(a_target) && CircleManager::IsTargetCombatantPair(a_target->GetFormID(), a_attacker->GetFormID()))
             {
                 if (_IsInAttackRange(a_target, a_attacker, 0.0))
                 {
@@ -377,5 +377,13 @@ namespace WaitYourTurn
     {
         CircleManager::RemoveTarget(a_actor->GetFormID());
         return _Disable(a_actor);
+    }
+    void EquipCombatInventoryItemHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
+    {
+        _EquipItem(a_item, a_controller);
+        auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
+        auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
+        if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
+        CircleManager::AddTarget(newTarget->GetFormID(), a_actor->GetFormID());
     }
 }

@@ -39,7 +39,8 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	PackageOverrideHook::Install();
 	CombatGroupHook::Install();
 	CombatControllerHook::Install();
-	CombatRangeHook::Install();
+	EquipCombatInventoryItemHook::Install();
+	// CombatRangeHook::Install();
 	RaceTransformHook::Install();
 	ProjectileHook::Install();
 	DisableHook::Install();

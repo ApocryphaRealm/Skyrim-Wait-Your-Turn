@@ -265,10 +265,22 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         static void Install()
         {
             REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_Actor[0] };
-            _Disable = actorVtbl.write_vfunc(0x5E, Disable);
+            _Disable = actorVtbl.write_vfunc(0x89, Disable);
         }
         private:
         static void Disable(Actor* a_actor);
         static inline REL::Relocation<decltype(Disable)> _Disable;
+    };
+    class EquipCombatInventoryItemHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_CombatInventoryItemMelee[0] };
+            _EquipItem = actorVtbl.write_vfunc(0x11, EquipItem);
+        }
+        private:
+        static void EquipItem(CombatInventoryItem* a_item, CombatController* a_controller);
+        static inline REL::Relocation<decltype(EquipItem)> _EquipItem; 
     };
 }
