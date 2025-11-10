@@ -42,4 +42,48 @@ namespace WaitYourTurn
     
         BSEventNotifyControl ProcessEvent(const TESCombatEvent* a_event,  BSTEventSource<TESCombatEvent>* a_eventSource) override; 
     };
+    class CellAttachDetachEventHandler: public BSTEventSink<TESCellAttachDetachEvent>
+    {
+        private:
+
+        public: 
+        static CellAttachDetachEventHandler* GetSingleton()
+        {
+            static CellAttachDetachEventHandler singleton; 
+            return &singleton; 
+        }
+    
+        static void Register()
+        {
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESCellAttachDetachEvent>(GetSingleton()); 
+        }
+    
+        BSEventNotifyControl ProcessEvent(const TESCellAttachDetachEvent* a_event,  BSTEventSource<TESCellAttachDetachEvent>* a_eventSource) override; 
+    };
+    class DeleteEventHandler : public BSTEventSink<TESFormDeleteEvent>
+    {
+        private:
+
+        public: 
+        static DeleteEventHandler* GetSingleton()
+        {
+            static DeleteEventHandler singleton; 
+            return &singleton; 
+        }
+    
+        static void Register()
+        {
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESFormDeleteEvent>(GetSingleton()); 
+        }
+    
+        BSEventNotifyControl ProcessEvent(const TESFormDeleteEvent* a_event,  BSTEventSource<TESFormDeleteEvent>* a_eventSource) override; 
+    };
+
+    static void RegisterEventHandlers()
+    {
+        PackageEventHandler::Register();
+        CombatEventHandler::Register();
+        CellAttachDetachEventHandler::Register();
+        DeleteEventHandler::Register();
+    }
 }

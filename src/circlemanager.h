@@ -37,6 +37,7 @@ namespace WaitYourTurn
             void UnsetAttacker(FormID formID);
             void Update(float a_delta);
             void AllowAttackers(bool state);
+            bool GetAllowAttackers() { return allowAttackers; }
         };
 
 
@@ -50,10 +51,11 @@ namespace WaitYourTurn
         static void RemoveCombatant(FormID targetID, FormID actorId);
         static void AllowCombatantDefense(FormID targetID, FormID actorID);
         static void AllowAttackers(FormID targetID, bool state); 
+        static bool GetAllowAttackers(FormID targetID);
 
         static bool IsBeingCircled(Actor* a_target);
         static bool CanCircle(Actor* a_target, Actor* a_combatant);
-
+        static void StopAllCircling(Actor* a_target);
         static void LoadCircleGroups();
 
         static void Load()

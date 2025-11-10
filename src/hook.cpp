@@ -77,8 +77,22 @@ namespace WaitYourTurn
         {
             auto* actor = member.memberHandle.get().get();
             if (!actor) { continue; }
-            CircleManager::UpdateTarget(actor->GetFormID());
-
+            if (CircleManager::IsBeingCircled(actor))
+            {
+                if (actor->IsInKillMove() && CircleManager::GetAllowAttackers(actor->GetFormID()))
+                {
+                    CircleManager::AllowAttackers(actor->GetFormID(), false);
+                }
+                else if (!CircleManager::GetAllowAttackers(actor->GetFormID()))
+                {
+                    auto* player = actor->As<PlayerCharacter>();
+                    if (player && player->GetPlayerRuntimeData().preTransformationData == nullptr) // not transformed but attackers not allowed meaning post killmove
+                    {
+                        CircleManager::AllowAttackers(actor->GetFormID(), true);
+                    }
+                }
+                CircleManager::UpdateTarget(actor->GetFormID());
+            }
             // auto* combatController = actor->GetActorRuntimeData().combatController;
             // if (!combatController) { continue; }
 
@@ -329,5 +343,39 @@ namespace WaitYourTurn
         if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
         CircleManager::AllowAttackers(target_actor->GetFormID(), true);
         SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
+    }
+    bool KillmoveHook::StartKillmove(Actor *a_attacker, Actor *a_victim)
+    {
+        auto* target_actor = a_attacker;
+        if (!target_actor || !CircleManager::IsBeingCircled(target_actor) || !Settings::GetCircling().bKillmoveProtection) { return _StartKillmove(a_attacker, a_victim); }
+        CircleManager::AllowAttackers(target_actor->GetFormID(), false);
+        return _StartKillmove(a_attacker, a_victim); 
+    }
+    void ProjectileHook::UpdateImpl(Projectile *a_projectile, float a_delta)
+    {
+        auto& settings = Settings::GetCircling();
+        if (!settings.bProjectileSlowdown)
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        auto& rtd = a_projectile->GetProjectileRuntimeData(); 
+        auto shooter = rtd.shooter.get();
+        auto target = rtd.desiredTarget.get();
+        if (!shooter || shooter->IsPlayerRef() || (target && !target->IsPlayerRef()))
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
+        float distance = a_projectile->GetPosition().GetDistance(player->GetPosition());
+        if (distance < 0.f || distance > settings.fProjectileSlowdownRadius)
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
+        return _UpdateImpl(a_projectile, a_delta * settings.fProjectileSlowdownMultiplier);
+    }
+    void DisableHook::Disable(Actor *a_actor)
+    {
+        CircleManager::RemoveTarget(a_actor->GetFormID());
+        return _Disable(a_actor);
     }
 }

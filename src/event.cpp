@@ -1,4 +1,5 @@
 #include "event.h"
+#include "hook.h"
 namespace WaitYourTurn
 {
     using Control = BSEventNotifyControl;
@@ -28,14 +29,12 @@ namespace WaitYourTurn
                     // high->SetHeadtrackTarget(HEAD_TRACK::kCombat, target);
                     break;
                 case EventType::kPackageChange:
-                    SKSE::log::info("Overriding headtracking for {}", actor->GetName());
+                    SKSE::log::info("Clearing headtracking for {}", actor->GetName());
                     high->pathLookAtTarget = ActorHandle();
-                    // high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
                     break;
                 case EventType::kPackageEnd:
-                    SKSE::log::info("Overriding headtracking for {}", actor->GetName());
+                    SKSE::log::info("Clearing headtracking for {}", actor->GetName());
                     high->pathLookAtTarget = ActorHandle();
-                    // high->ClearHeadtrackTarget(HEAD_TRACK::kCombat, true);
                     break;
             }
 
@@ -46,7 +45,7 @@ namespace WaitYourTurn
     {
         auto actor = a_event->actor; 
         auto targetActor = a_event->targetActor;
-        if (a_event->newState == ACTOR_COMBAT_STATE::kNone)
+        if (a_event->newState == ACTOR_COMBAT_STATE::kNone || a_event->newState == ACTOR_COMBAT_STATE::kSearching)
         {
             if (actor)
             {
@@ -85,5 +84,17 @@ namespace WaitYourTurn
         //     }
         // }
         return Control::kContinue;
+    }
+    BSEventNotifyControl CellAttachDetachEventHandler::ProcessEvent(const TESCellAttachDetachEvent *a_event, BSTEventSource<TESCellAttachDetachEvent> *a_eventSource)
+    {
+        if (a_event->attached || !a_event->reference || a_event->reference->GetFormType() != FormType::ActorCharacter) { return BSEventNotifyControl::kContinue; }
+        SKSE::log::info("Stopping circling for detached actor {}", a_event->reference->GetName());
+        CircleManager::StopAllCircling(a_event->reference->As<Actor>());
+        return BSEventNotifyControl::kContinue;
+    }
+    BSEventNotifyControl DeleteEventHandler::ProcessEvent(const TESFormDeleteEvent *a_event, BSTEventSource<TESFormDeleteEvent> *a_eventSource)
+    {
+        CircleManager::RemoveTarget(a_event->formID);
+        return BSEventNotifyControl::kContinue;
     }
 }

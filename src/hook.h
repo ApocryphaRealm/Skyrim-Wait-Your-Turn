@@ -65,7 +65,6 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
     class CombatGroupHook
     {
         public:
-
         static void Install()
         {
             InstallUpdateHook();
@@ -229,5 +228,47 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         static inline REL::Relocation<decltype(FinishWerewolf)> _FinishWerewolf; 
         static inline REL::Relocation<decltype(StartVampire)> _StartVampire; 
         static inline REL::Relocation<decltype(FinishVampire)> _FinishVampire;
+    };
+    class KillmoveHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(37659, 0), REL::Relocate(0x44, 0x0) }; 
+            auto& trampoline = SKSE::GetTrampoline(); 
+            SKSE::AllocTrampoline(14); 
+            _StartKillmove = trampoline.write_call<5>(target.address(), StartKillmove); 
+        }
+        private:
+        static bool StartKillmove(Actor* a_attacker, Actor* a_victim); 
+        static inline REL::Relocation<decltype(StartKillmove)> _StartKillmove; 
+    };
+
+    class ProjectileHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> target { VTABLE_ArrowProjectile[0] }; 
+            _UpdateImpl = target.write_vfunc(0xAB, UpdateImpl);
+        }
+        private:
+        static void UpdateImpl(Projectile* a_projectile, float a_delta);
+        static inline REL::Relocation<decltype(UpdateImpl)> _UpdateImpl;                                                                                                                     
+
+    };
+    //	p	Character__sub_1406280D0+44	call    ActorProcess__StartDeferredKill_1406820E0
+
+    class DisableHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_Actor[0] };
+            _Disable = actorVtbl.write_vfunc(0x5E, Disable);
+        }
+        private:
+        static void Disable(Actor* a_actor);
+        static inline REL::Relocation<decltype(Disable)> _Disable;
     };
 }

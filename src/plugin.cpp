@@ -16,6 +16,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
         PackageOverrideHook::Load();
 		PackageEventHandler::Register();
 		CombatEventHandler::Register();
+		CellAttachDetachEventHandler::Register();
 		CircleManager::Load();
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
@@ -40,6 +41,8 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	CombatControllerHook::Install();
 	CombatRangeHook::Install();
 	RaceTransformHook::Install();
+	ProjectileHook::Install();
+	DisableHook::Install();
     auto messaging = SKSE::GetMessagingInterface();
 	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
 		return false;
