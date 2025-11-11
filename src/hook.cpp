@@ -30,6 +30,10 @@ namespace WaitYourTurn
 
     TESPackage *PackageOverrideHook::GetOverridePackage(ExtraDataList *a_extraData, Actor *a_actor)
     {
+        if (!circlePackage)
+        {
+            return _GetOverridePackage(a_extraData, a_actor);
+        }
         ReadLocker locker(dataLock);
         if (a_actor && overrideActors.contains(a_actor->GetFormID()))
         {
@@ -214,6 +218,28 @@ namespace WaitYourTurn
         }
         _RemoveMember3(a_group, a_actor);
     }
+    bool CombatGroupHook::MergeGroups(CombatGroup *a_group, CombatGroup *a_other)
+    {
+        auto result = _MergeGroups(a_group, a_other);
+        SKSE::log::info("Reloading after merging combat groups");
+        for(auto& target : a_group->targets)
+        {
+            auto* targetActor = target.targetHandle.get().get();
+            if (!targetActor) { continue; }
+            BSReadLockGuard readLock(a_group->lock);
+            auto& members = a_group->members;
+            for(auto& member : members)
+            {
+                auto* memberActor = member.memberHandle.get().get();
+                if (!memberActor) { continue; }
+                if (CircleManager::CanCircle(targetActor, memberActor))
+                {
+                    CircleManager::AddTarget(targetActor->GetFormID(), memberActor->GetFormID());
+                }
+            }
+        }
+        return result;
+    }
     void CombatControllerHook::SetTarget(CombatController *a_controller, Actor *a_target)
     {
         auto combatant = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
@@ -378,12 +404,36 @@ namespace WaitYourTurn
         CircleManager::RemoveTarget(a_actor->GetFormID());
         return _Disable(a_actor);
     }
-    void EquipCombatInventoryItemHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
+    void EquipMeleeHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
     {
         _EquipItem(a_item, a_controller);
         auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
         CircleManager::AddTarget(newTarget->GetFormID(), a_actor->GetFormID());
+    }
+    void EquipRangedHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
+    {
+        _EquipItem(a_item, a_controller);
+        auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
+        auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
+        if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
+        CircleManager::RemoveCombatant(newTarget->GetFormID(), a_actor->GetFormID());
+    }
+    void EquipMagicHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
+    {
+        _EquipItem(a_item, a_controller);
+        auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
+        auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
+        if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
+        CircleManager::RemoveCombatant(newTarget->GetFormID(), a_actor->GetFormID());
+    }
+    void EquipStaffHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
+    {
+        _EquipItem(a_item, a_controller);
+        auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
+        auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
+        if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
+        CircleManager::RemoveCombatant(newTarget->GetFormID(), a_actor->GetFormID());
     }
 }

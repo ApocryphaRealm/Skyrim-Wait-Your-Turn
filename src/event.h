@@ -78,12 +78,29 @@ namespace WaitYourTurn
     
         BSEventNotifyControl ProcessEvent(const TESFormDeleteEvent* a_event,  BSTEventSource<TESFormDeleteEvent>* a_eventSource) override; 
     };
+    class DeathEventHandler : public BSTEventSink<TESDeathEvent>
+    {
+        private:
 
+        public: 
+        static DeathEventHandler* GetSingleton()
+        {
+            static DeathEventHandler singleton; 
+            return &singleton; 
+        }
+    
+        static void Register()
+        {
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESDeathEvent>(GetSingleton()); 
+        }
+    
+        BSEventNotifyControl ProcessEvent(const TESDeathEvent* a_event,  BSTEventSource<TESDeathEvent>* a_eventSource) override; 
+    };
     static void RegisterEventHandlers()
     {
-        PackageEventHandler::Register();
         CombatEventHandler::Register();
         CellAttachDetachEventHandler::Register();
         DeleteEventHandler::Register();
+        DeathEventHandler::Register();
     }
 }

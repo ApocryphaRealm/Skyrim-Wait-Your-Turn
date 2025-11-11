@@ -71,6 +71,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
             InstallRemoveMemberHook();
             // InstallMemberKilledHook();
             InstallMemberAttackedHook();
+            InstallMergeGroupsHook();
             // InstallStopCombatHook();
             // InstallSetCombatGroupHook();
             // InstallConstructorHooks();
@@ -140,6 +141,16 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
             // _RemoveMember3 = trampoline.write_call<5>(target3.address(), RemoveMember3);
 
         }
+
+        static void InstallMergeGroupsHook()
+        {
+            //Down	p	NiTPrimitiveArray_CombatGroup____sub_1407A5FA0+65	call    sub_14076B160 SE
+            //	sub_14083D2C0+65 AE
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(45574, 46874), REL::Relocate(0x65, 0x65) };
+            auto& trampoline = SKSE::GetTrampoline();
+            SKSE::AllocTrampoline(14);
+            _MergeGroups = trampoline.write_call<5>(target.address(), MergeGroups);
+        }
         
         static void Update(CombatGroup* a_group); 
         static inline REL::Relocation<decltype(Update)> _Update; 
@@ -155,10 +166,15 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         static void RemoveMember(CombatGroup* a_group, Actor* a_actor);
         static void RemoveMember2(CombatGroup* a_group, Actor* a_actor);
         static void RemoveMember3(CombatGroup* a_group, Actor* a_actor);
+        
+
+        static bool MergeGroups(CombatGroup* a_group, CombatGroup* a_other);
 
         static inline REL::Relocation<decltype(RemoveMember)> _RemoveMember;
         static inline REL::Relocation<decltype(RemoveMember2)> _RemoveMember2; 
         static inline REL::Relocation<decltype(RemoveMember3)> _RemoveMember3; 
+
+        static inline REL::Relocation<decltype(MergeGroups)> _MergeGroups;
 
 
         using Lock = std::shared_mutex;
@@ -271,12 +287,48 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         static void Disable(Actor* a_actor);
         static inline REL::Relocation<decltype(Disable)> _Disable;
     };
-    class EquipCombatInventoryItemHook
+    class EquipMeleeHook
     {
         public:
         static void Install()
         {
             REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_CombatInventoryItemMelee[0] };
+            _EquipItem = actorVtbl.write_vfunc(0x11, EquipItem);
+        }
+        private:
+        static void EquipItem(CombatInventoryItem* a_item, CombatController* a_controller);
+        static inline REL::Relocation<decltype(EquipItem)> _EquipItem; 
+    };
+    class EquipRangedHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_CombatInventoryItemRanged[0] };
+            _EquipItem = actorVtbl.write_vfunc(0x11, EquipItem);
+        }
+        private:
+        static void EquipItem(CombatInventoryItem* a_item, CombatController* a_controller);
+        static inline REL::Relocation<decltype(EquipItem)> _EquipItem; 
+    };
+    class EquipMagicHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_CombatInventoryItemMagic[0] };
+            _EquipItem = actorVtbl.write_vfunc(0x11, EquipItem);
+        }
+        private:
+        static void EquipItem(CombatInventoryItem* a_item, CombatController* a_controller);
+        static inline REL::Relocation<decltype(EquipItem)> _EquipItem; 
+    };
+    class EquipStaffHook
+    {
+        public:
+        static void Install()
+        {
+            REL::Relocation<std::uintptr_t> actorVtbl { VTABLE_CombatInventoryItemStaff[0] };
             _EquipItem = actorVtbl.write_vfunc(0x11, EquipItem);
         }
         private:

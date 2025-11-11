@@ -4,6 +4,8 @@
 #include "util.h"
 #include "hook.h"
 #include "settings.h"
+#include "packagecircle.h"
+#include "flagcircle.h"
 namespace WaitYourTurn
 {
     class CircleManager
@@ -13,10 +15,8 @@ namespace WaitYourTurn
         {
             float timeRemaining;
             FormID formID;
-            CircleMember(FormID id, float time) : formID(id), timeRemaining(time) { StopCircling(); }
-            CircleMember(FormID id) : formID(id), timeRemaining(0.f) { StartCircling(); }
-            void StopCircling();
-            void StartCircling();
+            CircleMember(FormID id, float time) : formID(id), timeRemaining(time) { circleHandler->StopCircling(formID); }
+            CircleMember(FormID id) : formID(id), timeRemaining(0.f) { circleHandler->StartCircling(formID); }
 
             ~CircleMember();
         };
@@ -43,10 +43,16 @@ namespace WaitYourTurn
 
 
         public:
+        static void SetupCircleHandler()
+        {
+            circleHandler = Settings::GetCircling().bLegacyCircling ?
+                std::unique_ptr<CircleHandler>(std::make_unique<PackageCircle>()) :
+                std::unique_ptr<CircleHandler>(std::make_unique<FlagCircle>());
+            circleHandler->Load();
+        }
         static void UpdateTarget(FormID actorId);
         static void ChangeTarget(FormID targetID, FormID lastTargetID, FormID combatMemberID);
         static void AddTarget(FormID targetID, FormID combatMemberID);
-        static void SetupTarget(FormID targetID, FormID combatMemberID); 
         static void RemoveTarget(FormID targetID);
         static void RemoveCombatant(FormID targetID, FormID actorId);
         static void AllowCombatantDefense(FormID targetID, FormID actorID);
@@ -60,11 +66,6 @@ namespace WaitYourTurn
         static void StopAllCircling(Actor* a_target, CombatGroup* a_group); 
         static void LoadCircleGroups();
 
-        static void Load()
-        {
-            circleTargetKeyword = FormUtil::Parse::GetFormFromMod(0x802, "WaitYourTurnRedux.esp")->As<BGSKeyword>(); 
-        }
-
         private:
         using Lock = std::shared_mutex;
         using ReadLocker = std::shared_lock<Lock>;
@@ -72,8 +73,8 @@ namespace WaitYourTurn
         static inline Lock dataLock;
         static inline std::random_device rd;
         static inline std::mt19937 mt{rd()};
-        static inline BGSKeyword* circleTargetKeyword = nullptr; 
 
+        static inline std::unique_ptr<CircleHandler> circleHandler = nullptr;
         // static inline std::unordered_set<FormID> unlockActors;
         static inline std::unordered_map<FormID, CircleGroup> circleGroupMap;
         static float GetAttackerDuration();

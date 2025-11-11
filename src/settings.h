@@ -8,6 +8,7 @@ namespace WaitYourTurn
         private:
         struct Circling
         {
+            bool bLegacyCircling = false;
             bool bPlayerOnly = true;
             bool bIncludeFollowers = false;
             bool bIncludeRangedMagic = false;
@@ -33,6 +34,7 @@ namespace WaitYourTurn
             ini.SetUnicode(); 
             if (ini.LoadFile(path) < SI_OK) { return; }
             auto header = "Circling";
+            circleOptions.bLegacyCircling = ini.GetBoolValue(header, NAMEOF(circleOptions.bLegacyCircling).c_str(), false);
             circleOptions.bPlayerOnly = ini.GetBoolValue(header, NAMEOF(circleOptions.bPlayerOnly).c_str(), true);
             circleOptions.bTransformProtection = ini.GetBoolValue(header, NAMEOF(circleOptions.bTransformProtection).c_str(), true);
             circleOptions.bIncludeRangedMagic = ini.GetBoolValue(header, NAMEOF(circleOptions.bIncludeRangedMagic).c_str(), false);

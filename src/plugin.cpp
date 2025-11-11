@@ -2,6 +2,8 @@
 #include "hook.h"
 #include "event.h"
 #include "circlemanager.h"
+#include "packagecircle.h"
+#include "flagcircle.h"
 using namespace WaitYourTurn;
 void OnDataLoaded()
 {
@@ -13,11 +15,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
 		Settings::LoadSettings();
-        PackageOverrideHook::Load();
-		PackageEventHandler::Register();
-		CombatEventHandler::Register();
-		CellAttachDetachEventHandler::Register();
-		CircleManager::Load();
+		RegisterEventHandlers();
+		CircleManager::SetupCircleHandler();
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
 		break;
@@ -39,7 +38,10 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	PackageOverrideHook::Install();
 	CombatGroupHook::Install();
 	CombatControllerHook::Install();
-	EquipCombatInventoryItemHook::Install();
+	EquipMeleeHook::Install();
+	EquipRangedHook::Install();
+	EquipMagicHook::Install();
+	EquipStaffHook::Install();
 	// CombatRangeHook::Install();
 	RaceTransformHook::Install();
 	ProjectileHook::Install();

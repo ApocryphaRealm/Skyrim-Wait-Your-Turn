@@ -3,33 +3,9 @@
 namespace WaitYourTurn
 {
     using HEAD_TRACK = HighProcessData::HEAD_TRACK_TYPES::HEAD_TRACK_TYPE;
-    void CircleManager::CircleMember::StopCircling()
-    {
-        auto id = formID;
-        auto* tasks = SKSE::GetTaskInterface();
-        if (!tasks) { return; }
-        tasks->AddTask([id]() 
-        {
-            auto* actor = TESForm::LookupByID<Actor>(id);
-            if (!actor) { return; }
-            actor->GetActorRuntimeData().boolFlags.reset(Actor::BOOL_FLAGS::kAttackingDisabled);
-        });
-    }
-    void CircleManager::CircleMember::StartCircling()
-    {
-        auto id = formID;
-        auto* tasks = SKSE::GetTaskInterface();
-        if (!tasks) { return; }
-        tasks->AddTask([id]() 
-        {
-            auto* actor = TESForm::LookupByID<Actor>(id);
-            if (!actor) { return; }
-            actor->GetActorRuntimeData().boolFlags.set(Actor::BOOL_FLAGS::kAttackingDisabled);
-        });
-    }
     CircleManager::CircleMember::~CircleMember()
     {
-        StopCircling();
+        circleHandler->StopCircling(formID);
     }
     void CircleManager::UpdateTarget(FormID actorID)
     {
@@ -82,40 +58,9 @@ namespace WaitYourTurn
         }
         newCircleGroup = &result->second;
         if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
-        SetupTarget(targetID, combatMemberID);
+        circleHandler->SetupCircling(combatMemberID, targetID);
         result->second.circlerMap.emplace(combatMemberID, combatMemberID);
         SKSE::log::info("Added combatant {:X} to target {:X}", combatMemberID, targetID);
-    }
-    void CircleManager::SetupTarget(FormID targetID, FormID combatMemberID)
-    {
-        auto* actor = TESForm::LookupByID<Actor>(combatMemberID);
-        auto* target = TESForm::LookupByID<Actor>(targetID);
-        if (!target || !actor) { return; }
-
-        auto *extraDataList = &actor->extraList;
-        if (!extraDataList)
-        {
-            return;
-        }
-
-        auto *linkedRefs = extraDataList->GetByType<ExtraLinkedRef>();
-        if (!linkedRefs)
-        {
-            linkedRefs = BSExtraData::Create<ExtraLinkedRef>();
-            extraDataList->Add(linkedRefs);
-        }
-        for(auto& linkedRef : linkedRefs->linkedRefs)
-        {
-            if (linkedRef.keyword && linkedRef.keyword->GetFormID() == circleTargetKeyword->GetFormID())
-            {
-                linkedRef.refr = target;
-                return;
-            }
-        }
-        ExtraLinkedRef::LinkedRef linkedRef;
-        linkedRef.keyword = circleTargetKeyword;
-        linkedRef.refr = target;
-        linkedRefs->linkedRefs.emplace_back(linkedRef); 
     }
     bool CircleManager::IsBeingCircled(Actor *a_target)
     {
@@ -124,14 +69,14 @@ namespace WaitYourTurn
     }
     bool CircleManager::CanCircle(Actor *a_target, Actor *a_combatant)
     {
-        return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat) 
+        return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat)
+        && (!a_combatant->GetActorRuntimeData().combatController ||
+                (!a_combatant->GetActorRuntimeData().combatController->IsFleeing()
+                && !a_combatant->GetActorRuntimeData().combatController->ignoringCombat))
         && (!a_combatant->IsPlayerRef()) 
         && (a_target->IsPlayerRef() 
-        || ((!Settings::GetCircling().bPlayerOnly 
-            || (a_combatant->IsPlayerTeammate() && Settings::GetCircling().bIncludeFollowers)) 
-            && !(a_target->GetCurrentScene() 
-                && a_target->GetCurrentScene()->isPlaying 
-                && !a_target->GetCurrentScene()->flags.any(BGSScene::Flag::kInterruptible))))
+        || (!Settings::GetCircling().bPlayerOnly 
+            || (a_combatant->IsPlayerTeammate() && Settings::GetCircling().bIncludeFollowers)))
         && !IsRangedOrMagic(a_combatant) 
         && IsHumanoid(a_combatant); 
         // && !(a_combatant->GetCurrentScene() 
@@ -324,7 +269,7 @@ namespace WaitYourTurn
         {
             return;
         }
-        iter->second.StopCircling();
+        circleHandler->StopCircling(iter->second.formID);
         iter->second.timeRemaining = GetAttackerDuration();
         SKSE::log::info("New attacker {:X} for {}", iter->second.formID, iter->second.timeRemaining);
         attackerMap.insert(circlerMap.extract(iter));
@@ -337,7 +282,7 @@ namespace WaitYourTurn
         {
             return;
         }
-        iter->second.StopCircling();
+        circleHandler->StopCircling(iter->second.formID);
         iter->second.timeRemaining = GetDefenderDuration();
         SKSE::log::info("New defender {:X} for {}", iter->second.formID, iter->second.timeRemaining);
         attackerMap.insert(circlerMap.extract(iter));
@@ -350,7 +295,7 @@ namespace WaitYourTurn
         {
             return;
         }
-        iter->second.StartCircling();
+        circleHandler->StartCircling(iter->second.formID);
         SKSE::log::info("Stopped attacker {:X}", iter->second.formID);
         circlerMap.insert(attackerMap.extract(iter));
     }

@@ -97,4 +97,12 @@ namespace WaitYourTurn
         CircleManager::RemoveTarget(a_event->formID);
         return BSEventNotifyControl::kContinue;
     }
+    BSEventNotifyControl DeathEventHandler::ProcessEvent(const TESDeathEvent *a_event, BSTEventSource<TESDeathEvent> *a_eventSource)
+    {
+        if (!a_event->actorDying) { return BSEventNotifyControl::kContinue; }
+        auto* actor = a_event->actorDying->As<Actor>();
+        if (!actor) { return BSEventNotifyControl::kContinue; }
+        CircleManager::StopAllCircling(actor);
+        return BSEventNotifyControl::kContinue;
+    }
 }
