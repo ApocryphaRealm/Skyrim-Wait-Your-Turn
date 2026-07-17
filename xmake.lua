@@ -3,7 +3,7 @@ local name = "WaitYourTurn"
 local author = "monitor221hz"
 local description = "SKSE64 plugin template using CommonLibSSE-NG"
 local version = "1.0.0"
-local license = "GPL-3.0"
+local license = "AGPL-3.0"
  
 -- set minimum xmake version
 set_xmakever("2.8.2")
