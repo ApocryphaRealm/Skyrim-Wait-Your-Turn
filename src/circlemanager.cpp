@@ -64,11 +64,13 @@ namespace WaitYourTurn
     }
     bool CircleManager::IsBeingCircled(Actor *a_target)
     {
+        if (!a_target) { return false; }
         ReadLocker readLocker(dataLock);
         return circleGroupMap.contains(a_target->GetFormID());
     }
     bool CircleManager::CanCircle(Actor *a_target, Actor *a_combatant)
     {
+        if (!a_target || !a_combatant) { return false; }
         return !a_combatant->GetActorRuntimeData().boolBits.any(Actor::BOOL_BITS::kSearchingInCombat)
         && (!a_combatant->GetActorRuntimeData().combatController ||
                 (!a_combatant->GetActorRuntimeData().combatController->IsFleeing()
@@ -197,7 +199,6 @@ namespace WaitYourTurn
         {
             return false;
         }
-        readLocker.unlock();
         auto& group = result->second;
         ReadLocker groupLocker(group.lock);
         return group.circlerMap.contains(combatMemberID) || group.attackerMap.contains(combatMemberID);
@@ -219,6 +220,7 @@ namespace WaitYourTurn
             }
         }
         auto processLists = ProcessLists::GetSingleton();
+        if (!processLists) { return; }
         for(auto actorHandle : processLists->highActorHandles)
         {
             auto actorPtr = actorHandle.get();
@@ -250,7 +252,7 @@ namespace WaitYourTurn
     }
     bool CircleManager::IsRangedOrMagic(Actor *a_actor)
     {
-        if (Settings::GetCircling().bIncludeRangedMagic) { return false; }
+        if (!a_actor || Settings::GetCircling().bIncludeRangedMagic) { return false; }
         auto* process = a_actor->GetActorRuntimeData().currentProcess;
         if (!process) { return false; }
 

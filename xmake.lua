@@ -2,7 +2,7 @@
 local name = "WaitYourTurn"
 local author = "monitor221hz"
 local description = "SKSE64 plugin template using CommonLibSSE-NG"
-local version = "0.4.0"
+local version = "1.0.0"
 local license = "GPL-3.0"
  
 -- set minimum xmake version
@@ -35,6 +35,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 -- include custom rules
 includes("xmake-rules.lua")
 
+add_requires("imgui")
 
 -- targets
 target(name)
@@ -60,3 +61,5 @@ target(name)
     add_headerfiles("src/**.h")
     add_includedirs("src")
     set_pcxxheader("src/pch.h")
+
+    add_packages("imgui")

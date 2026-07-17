@@ -18,7 +18,10 @@ namespace WaitYourTurn
     
         static void Register()
         {
-            circlePackage = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp")->As<TESPackage>();
+            auto* form = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp");
+            if (form) {
+                circlePackage = form->As<TESPackage>();
+            }
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESPackageEvent>(GetSingleton()); 
         }
     

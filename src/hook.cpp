@@ -221,6 +221,10 @@ namespace WaitYourTurn
     bool CombatGroupHook::MergeGroups(CombatGroup *a_group, CombatGroup *a_other)
     {
         auto result = _MergeGroups(a_group, a_other);
+        if (!a_group)
+        {
+            return result;
+        }
         SKSE::log::info("Reloading after merging combat groups");
         for(auto& target : a_group->targets)
         {
@@ -321,6 +325,10 @@ namespace WaitYourTurn
     void RaceTransformHook::StartWerewolf(WerewolfEffect *a_effect)
     {
         _StartWerewolf(a_effect);
+        if (!a_effect || !a_effect->target)
+        {
+            return;
+        }
         auto* refr = a_effect->target->GetTargetStatsObject();
         if (!refr)
         {
@@ -334,6 +342,10 @@ namespace WaitYourTurn
     void RaceTransformHook::FinishWerewolf(WerewolfEffect *a_effect)
     {
         _FinishWerewolf(a_effect);
+        if (!a_effect || !a_effect->target)
+        {
+            return;
+        }
         auto* refr = a_effect->target->GetTargetStatsObject();
         if (!refr)
         {
@@ -347,6 +359,10 @@ namespace WaitYourTurn
     void RaceTransformHook::StartVampire(VampireLordEffect *a_effect)
     {
         _StartVampire(a_effect);
+        if (!a_effect || !a_effect->target)
+        {
+            return;
+        }
         auto* refr = a_effect->target->GetTargetStatsObject();
         if (!refr)
         {
@@ -360,6 +376,10 @@ namespace WaitYourTurn
     void RaceTransformHook::FinishVampire(VampireLordEffect *a_effect)
     {
         _FinishVampire(a_effect);
+        if (!a_effect || !a_effect->target)
+        {
+            return;
+        }
         auto* refr = a_effect->target->GetTargetStatsObject();
         if (!refr)
         {
@@ -388,7 +408,7 @@ namespace WaitYourTurn
         auto& rtd = a_projectile->GetProjectileRuntimeData(); 
         auto shooter = rtd.shooter.get();
         auto target = rtd.desiredTarget.get();
-        if (!shooter || shooter->IsPlayerRef() || (target && !target->IsPlayerRef()))
+        if (!player || !shooter || shooter->IsPlayerRef() || (target && !target->IsPlayerRef()))
         {
             return _UpdateImpl(a_projectile, a_delta);
         }
@@ -401,6 +421,7 @@ namespace WaitYourTurn
     }
     void DisableHook::Disable(Actor *a_actor)
     {
+        if (!a_actor) { return _Disable(a_actor); }
         CircleManager::RemoveTarget(a_actor->GetFormID());
         return _Disable(a_actor);
     }

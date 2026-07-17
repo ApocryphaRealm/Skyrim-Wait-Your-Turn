@@ -6,11 +6,18 @@ namespace WaitYourTurn
     void PackageCircle::Load()
     {
         PackageOverrideHook::Load();
-        circleTargetKeyword = FormUtil::Parse::GetFormFromMod(0x802, "WaitYourTurnRedux.esp")->As<BGSKeyword>(); 
+        auto* keywordForm = FormUtil::Parse::GetFormFromMod(0x802, "WaitYourTurnRedux.esp");
+        if (keywordForm) {
+            circleTargetKeyword = keywordForm->As<BGSKeyword>();
+        }
         PackageEventHandler::Register();
     }
     void PackageCircle::SetupCircling(RE::FormID targetID, RE::FormID combatMemberID)
     {
+        if (!circleTargetKeyword)
+        {
+            return;
+        }
         auto *actor = TESForm::LookupByID<Actor>(combatMemberID);
         auto *target = TESForm::LookupByID<Actor>(targetID);
         if (!target || !actor)
@@ -67,7 +74,7 @@ namespace WaitYourTurn
         tasks->AddTask([id, keyword]() 
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
-            if (!actor || actor->IsDead() || actor->IsDisabled() || !actor->IsAIEnabled()) { return; }
+            if (!actor || actor->IsDead() || actor->IsDisabled() || !actor->IsAIEnabled() || !keyword) { return; }
             SKSE::log::info("{} stopped circling", actor->GetName());
             auto *high = actor->GetHighProcess();
             if (high)
@@ -87,7 +94,6 @@ namespace WaitYourTurn
             {
                 return;
             }
-            size_t removeIndex = 0;
             for (auto it = linkedRefs->linkedRefs.begin(); it != linkedRefs->linkedRefs.end(); it++)
             {
                 auto &linkedRef = *it;

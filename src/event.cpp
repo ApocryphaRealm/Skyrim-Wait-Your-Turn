@@ -7,7 +7,7 @@ namespace WaitYourTurn
     using EventType = TESPackageEvent::Type;
     BSEventNotifyControl PackageEventHandler::ProcessEvent(const TESPackageEvent *a_event, BSTEventSource<TESPackageEvent> *a_eventSource)
     {
-        if (a_event->target && a_event->packageFormID == circlePackage->GetFormID())
+        if (a_event->target && circlePackage && a_event->packageFormID == circlePackage->GetFormID())
         {
             auto* actor = a_event->target->As<Actor>();
             if (!actor) { return Control::kContinue; }

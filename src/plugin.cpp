@@ -4,6 +4,7 @@
 #include "circlemanager.h"
 #include "packagecircle.h"
 #include "flagcircle.h"
+#include "Menu/ingame-menu.h"
 using namespace WaitYourTurn;
 void OnDataLoaded()
 {
@@ -46,6 +47,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	RaceTransformHook::Install();
 	ProjectileHook::Install();
 	DisableHook::Install();
+	Menu::RegisterMenu();
     auto messaging = SKSE::GetMessagingInterface();
 	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
 		return false;

@@ -82,6 +82,7 @@ namespace WaitYourTurn
         static bool IsRangedOrMagic(Actor* a_actor);
         static inline bool IsHumanoid(Actor* a_actor)
         {
+            if (!a_actor) { return false; }
             auto bodyPartData = a_actor->GetRace() ? a_actor->GetRace()->bodyPartData : nullptr;
             return bodyPartData && bodyPartData->GetFormID() == 0x1d;
         }

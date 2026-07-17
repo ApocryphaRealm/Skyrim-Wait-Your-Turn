@@ -13,7 +13,10 @@ namespace WaitYourTurn
         public:
         static void Load()
         {
-            circlePackage = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp")->As<TESPackage>();
+            auto* form = FormUtil::Parse::GetFormFromMod(0x800, "WaitYourTurnRedux.esp");
+            if (form) {
+                circlePackage = form->As<TESPackage>();
+            }
         }
         static void Install()
         {
