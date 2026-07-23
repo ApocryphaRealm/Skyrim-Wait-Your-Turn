@@ -98,7 +98,7 @@ namespace WaitYourTurn
         static uint16_t GetEquippedItemType(TESForm* a_form)
         {
             using func_t = decltype(GetEquippedItemType); 
-            static REL::Relocation<func_t> func { REL::RelocationID(14125, 14220) }; 
+            static REL::Relocation<func_t> func { REL::VariantID(14125, 14220, 0x196c20) }; 
             return func(a_form); 
         }
     };

@@ -56,7 +56,7 @@ Up	p	sub_1407663A0+126	call    sub_140856200
 Up	p	sub_14081ECC0+13F	call    sub_140856200
 	p	sub_1408BE880+213	call    sub_140856200
 */  
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(40259, 41261), REL::Relocate(0x61, 0x126) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(40259, 41261, 0x6f8f40), REL::Relocate(0x61, 0x126, 0x61) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _IsInAttackRange = trampoline.write_call<5>(target.address(), IsInAttackRange);
@@ -84,7 +84,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         //	p	sub_14083CA30+7C	call    sub_140803710
         static void InstallUpdateHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(45569, 46869), REL::Relocate(0x7C, 0x7C) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(45569, 46869, 0x7D0CB0), REL::Relocate(0x7C, 0x7C, 0x7C) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _Update = trampoline.write_call<5>(target.address(), Update);
@@ -105,7 +105,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         //Up	p	sub_140558FC0+98	call    sub_140806090
         static void InstallMemberAttackedHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32473, 33220), REL::Relocate(0xB3, 0x98) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(32473, 33220, 0x50DD90), REL::Relocate(0xB3, 0x98, 0xB3) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _NotifyMemberAttacked = trampoline.write_call<5>(target.address(), NotifyMemberAttacked);
@@ -116,7 +116,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         //	p	sub_14083F220+9F	call    sub_140804760
         static void InstallStopCombatHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(43495, 46897), REL::Relocate(0x9F, 0x9F) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(43495, 46897, 0x796180), REL::Relocate(0x9F, 0x9F, 0x9F) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _StopCombat = trampoline.write_call<5>(target.address(), StopCombat);
@@ -131,7 +131,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         {
             //Up	p	sub_1404FCDE0+164	call    sub_14076AA00
             //	p	sub_140558500+147	call    sub_140804330
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32468, 33215), REL::Relocate(0x164, 0x147) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(32468, 33215, 0x50d280), REL::Relocate(0x164, 0x147, 0x164) };
             //Down	p	sub_1407A81B0+3F	call    sub_14076AA00
             // REL::Relocation<std::uintptr_t> target2 { REL::RelocationID(45600, 0), REL::Relocate(0x3F, 0x0) };
             //Down	p	sub_140771B70+274	call    sub_14076AA00
@@ -149,7 +149,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         {
             //Down	p	NiTPrimitiveArray_CombatGroup____sub_1407A5FA0+65	call    sub_14076B160 SE
             //	sub_14083D2C0+65 AE
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(45574, 46874), REL::Relocate(0x65, 0x65) };
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(45574, 46874, 0x7d12f0), REL::Relocate(0x65, 0x65, 0x65) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(14);
             _MergeGroups = trampoline.write_call<5>(target.address(), MergeGroups);
@@ -202,8 +202,8 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
 //33218     140516A30
         static void Install()
         {
-            REL::Relocation<std::uintptr_t> target1 { REL::RelocationID(32471, 33218), REL::Relocate(0x157, 0x12F) };
-            REL::Relocation<std::uintptr_t> target2 { REL::RelocationID(32489, 33236), REL::Relocate(0x151, 0x119) };
+            REL::Relocation<std::uintptr_t> target1 { REL::VariantID(32471, 33218, 0x50d8f0), REL::Relocate(0x157, 0x12F, 0x157) };
+            REL::Relocation<std::uintptr_t> target2 { REL::VariantID(32489, 33236, 0x50e7a0), REL::Relocate(0x151, 0x119, 0x151) };
             //Down	p	fUnk_Attacked_1406285A0+658	call    sub_1404FD8F0
             REL::Relocation<std::uintptr_t> target3 { REL::RelocationID(37672, 0x0), REL::Relocate(0x658, 0x0) };
 
@@ -253,7 +253,7 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         public:
         static void Install()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(37659, 0), REL::Relocate(0x44, 0x0) }; 
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(37659, 0, 0x630fa0), REL::Relocate(0x44, 0x0, 0x44) }; 
             auto& trampoline = SKSE::GetTrampoline(); 
             SKSE::AllocTrampoline(14); 
             _StartKillmove = trampoline.write_call<5>(target.address(), StartKillmove); 
