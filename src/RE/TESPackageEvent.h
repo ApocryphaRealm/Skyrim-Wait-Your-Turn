@@ -14,8 +14,6 @@ namespace RE
         RE::TESObjectREFR *target; // 00
         uint32_t packageFormID;    // 08
         Type eventType;            // 0C
-        private:
-		KEEP_FOR_RE()
     };
     static_assert(sizeof(TESPackageEvent) == 0x10);
 }
