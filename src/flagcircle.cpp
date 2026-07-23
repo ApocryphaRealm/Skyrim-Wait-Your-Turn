@@ -10,7 +10,8 @@ namespace WaitYourTurn
         {
             return;
         }
-        tasks->AddTask([id]()
+        auto *actor = RE::TESForm::LookupByID<RE::Actor>(id);
+        if (!actor)
         {
             auto* actor = RE::TESForm::LookupByID<RE::Actor>(id);
             if (!actor) { return; }
@@ -33,12 +34,13 @@ namespace WaitYourTurn
         {
             return;
         }
-        tasks->AddTask([id]()
+        auto *actor = RE::TESForm::LookupByID<RE::Actor>(id);
+        if (!actor)
         {
-            auto* actor = RE::TESForm::LookupByID<RE::Actor>(id);
-            if (!actor) { return; }
-            actor->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kAttackingDisabled); 
-            actor->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kCastingDisabled);
+            return;
+        }
+        actor->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kAttackingDisabled);
+        actor->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kCastingDisabled);
 
             if (Settings::GetCircling().bDebugDisplay)
             {

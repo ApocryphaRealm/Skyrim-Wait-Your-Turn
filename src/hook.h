@@ -3,6 +3,7 @@
 #include <shared_mutex>
 #include "circlemanager.h"
 #include "util.h"
+#include <safetyhook.hpp>
 namespace WaitYourTurn
 {
     //	j	Actor__CheckForCurrentAliasPackage_1405DB180+47	jmp     sub_140126A00
@@ -71,7 +72,8 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
         static void Install()
         {
             InstallUpdateHook();
-            InstallRemoveMemberHook();
+            // InstallRemoveMemberHook();
+            InstallDestructorHook();
             // InstallMemberKilledHook();
             InstallMemberAttackedHook();
             InstallMergeGroupsHook();
@@ -127,23 +129,22 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
             _SetCombatGroup = actorVtbl.write_vfunc(0xD5, SetCombatGroup);
         }
 
-        static void InstallRemoveMemberHook()
+        static void InstallRemoveMemberHook() // deprecated
         {
-            //Up	p	sub_1404FCDE0+164	call    sub_14076AA00
-            //	p	sub_140558500+147	call    sub_140804330
-            REL::Relocation<std::uintptr_t> target { REL::VariantID(32468, 33215, 0x50d280), REL::VariantOffset(0x164, 0x147, 0x164) };
-            //Down	p	sub_1407A81B0+3F	call    sub_14076AA00
-            // REL::Relocation<std::uintptr_t> target2 { REL::RelocationID(45600, 0), REL::Relocate(0x3F, 0x0) };
-            //Down	p	sub_140771B70+274	call    sub_14076AA00
-            // REL::Relocation<std::uintptr_t> target3 { REL::RelocationID(43559, 0), REL::Relocate(0x274, 0x0) };
+            REL::Relocation<std::uintptr_t> target3 { REL::RelocationID(43559, 44785), REL::Relocate(0x274, 0x0) };
             auto& trampoline = SKSE::GetTrampoline();
             SKSE::AllocTrampoline(16);
 
-            _RemoveMember = trampoline.write_call<5>(target.address(), RemoveMember);
-            // _RemoveMember2 = trampoline.write_call<5>(target2.address(), RemoveMember2);
-            // _RemoveMember3 = trampoline.write_call<5>(target3.address(), RemoveMember3);
-
+            _RemoveMember = trampoline.write_call<5>(target3.address(), RemoveMember);
         }
+
+        static void InstallDestructorHook()
+        {
+            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32468, 33215)};
+            _Destroy = safetyhook::create_inline(target.address(), Destroy); 
+        }
+        static void Destroy(RE::CombatController* a_controller);
+        static inline SafetyHookInline _Destroy;
 
         static void InstallMergeGroupsHook()
         {
