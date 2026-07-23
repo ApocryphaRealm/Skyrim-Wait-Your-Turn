@@ -51,6 +51,14 @@
             },
             version = "v8.92"
         },
+        ["safetyhook#f56260b5"] = {
+            repo = {
+                branch = "master",
+                commit = "8917c2f7818847fead2be9b3b6f77d90d97323f3",
+                url = "https://github.com/xmake-io/xmake-repo.git"
+            },
+            version = "v0.6.9"
+        },
         ["spdlog#09c8c173"] = {
             repo = {
                 branch = "master",
@@ -58,6 +66,22 @@
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "v1.17.0"
+        },
+        ["zycore-c v1.5.0#f56260b5"] = {
+            repo = {
+                branch = "master",
+                commit = "8917c2f7818847fead2be9b3b6f77d90d97323f3",
+                url = "https://github.com/xmake-io/xmake-repo.git"
+            },
+            version = "v1.5.0"
+        },
+        ["zydis 4.1.0#f56260b5"] = {
+            repo = {
+                branch = "master",
+                commit = "8917c2f7818847fead2be9b3b6f77d90d97323f3",
+                url = "https://github.com/xmake-io/xmake-repo.git"
+            },
+            version = "v4.1.0"
         }
     }
 }

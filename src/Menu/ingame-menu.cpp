@@ -50,8 +50,9 @@ void WYTTool::DrawCircling()
         c.fMinFollowUpSeconds = std::clamp(minFollowUp, 0.0f, 60.0f);
     if (FUCK::SliderFloat("Max Follow-Up Seconds##wyt", &maxFollowUp, 0.0f, 60.0f, "%.1f"))
         c.fMaxFollowUpSeconds = std::clamp(maxFollowUp, 0.0f, 60.0f);
-    FUCK::HelpMarker("Random duration (seconds) an attacker stays in the follow-up / circling state. "
-                     "A random value is picked between Min and Max.");
+    FUCK::HelpMarker("Random duration (seconds) an enemy stays in the active attacker role "
+                     "(not circling - free to pursue and attack its target) before being cycled "
+                     "back into the circling state. A random value is picked between Min and Max.");
 
     float minDefense = c.fMinDefenseSeconds;
     float maxDefense = c.fMaxDefenseSeconds;
@@ -59,8 +60,10 @@ void WYTTool::DrawCircling()
         c.fMinDefenseSeconds = std::clamp(minDefense, 0.0f, 60.0f);
     if (FUCK::SliderFloat("Max Defense Seconds##wyt", &maxDefense, 0.0f, 60.0f, "%.1f"))
         c.fMaxDefenseSeconds = std::clamp(maxDefense, 0.0f, 60.0f);
-    FUCK::HelpMarker("Random duration (seconds) a defender stays protected. "
-                     "A random value is picked between Min and Max.");
+    FUCK::HelpMarker("Random duration (seconds) an enemy "
+                     "is allowed to retaliate for any attacks it receives. This prevents the player from being able to spam attacks "
+                     "to an enemy when they are circling, preventing the player "
+                     "from piling up cheap shots. A random value is picked between Min and Max.");
     FUCK::Unindent();
 }
 

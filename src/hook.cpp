@@ -72,6 +72,24 @@ namespace WaitYourTurn
         }
         _NotifyMemberAttacked(a_group, a_member, a_attacker);
     }
+    void CombatGroupHook::Destroy(RE::CombatController* a_controller)
+    {
+        auto* group = a_controller->combatGroup;
+        auto actor = a_controller->attackerHandle.get();
+        BSReadLockGuard readLock(group->lock);
+        auto &targets = group->targets;
+        for (auto &target : targets)
+        {
+            auto *targetActor = target.targetHandle.get().get();
+            if (!targetActor || !CircleManager::IsBeingCircled(targetActor))
+            {
+                continue;
+            }
+            SKSE::log::info("Remove member {}", actor->GetName());
+            CircleManager::RemoveCombatant(targetActor->GetFormID(), actor->GetFormID());
+        }
+        _Destroy.call(a_controller);
+    }
     void CombatGroupHook::Update(CombatGroup *a_group)
     {
         _Update(a_group);
@@ -246,6 +264,7 @@ namespace WaitYourTurn
     }
     void CombatControllerHook::SetTarget(CombatController *a_controller, Actor *a_target)
     {
+        if (!a_controller) { return; }
         auto combatant = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto oldTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         _SetTarget(a_controller, a_target);
@@ -271,6 +290,7 @@ namespace WaitYourTurn
     }
     void CombatControllerHook::SetTarget2(CombatController *a_controller, Actor *a_target)
     {
+        if (!a_controller) { return; }
         auto combatant = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto oldTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         _SetTarget2(a_controller, a_target);
@@ -428,6 +448,7 @@ namespace WaitYourTurn
     void EquipMeleeHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
     {
         _EquipItem(a_item, a_controller);
+        if (!a_controller) { return; }
         auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
@@ -436,6 +457,7 @@ namespace WaitYourTurn
     void EquipRangedHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
     {
         _EquipItem(a_item, a_controller);
+        if (!a_controller) { return; }
         auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
@@ -444,6 +466,7 @@ namespace WaitYourTurn
     void EquipMagicHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
     {
         _EquipItem(a_item, a_controller);
+        if (!a_controller) { return; }
         auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }
@@ -452,6 +475,7 @@ namespace WaitYourTurn
     void EquipStaffHook::EquipItem(CombatInventoryItem *a_item, CombatController *a_controller)
     {
         _EquipItem(a_item, a_controller);
+        if (!a_controller) { return; }
         auto a_actor = a_controller->attackerHandle.get() ? a_controller->attackerHandle.get() : a_controller->cachedAttacker;
         auto newTarget = a_controller->targetHandle.get() ? a_controller->targetHandle.get() : a_controller->cachedTarget;
         if (!a_actor || !newTarget || !CircleManager::CanCircle(newTarget.get(), a_actor.get())) { return; }

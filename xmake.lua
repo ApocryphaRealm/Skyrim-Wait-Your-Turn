@@ -2,7 +2,7 @@
 local name = "WaitYourTurn"
 local author = "monitor221hz"
 local description = "SKSE64 plugin template using CommonLibSSE-NG"
-local version = "1.0.0"
+local version = "1.0.2"
 local license = "AGPL-3.0"
  
 -- set minimum xmake version
@@ -36,6 +36,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 includes("xmake-rules.lua")
 
 add_requires("imgui")
+add_requires("safetyhook")
 
 -- targets
 target(name)
@@ -63,3 +64,4 @@ target(name)
     set_pcxxheader("src/pch.h")
 
     add_packages("imgui")
+    add_packages("safetyhook")

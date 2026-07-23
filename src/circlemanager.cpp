@@ -259,8 +259,8 @@ namespace WaitYourTurn
         auto* left_item = process->GetEquippedLeftHand();
         auto* right_item = process->GetEquippedRightHand();
 
-        auto left_type = GetEquippedItemType(left_item);
-        auto right_type = GetEquippedItemType(right_item);
+        uint16_t left_type  = left_item  ? GetEquippedItemType(left_item)  : 0;
+        uint16_t right_type = right_item ? GetEquippedItemType(right_item) : 0;
         return IsMagicItemType(left_type) || IsMagicItemType(right_type) || IsRangedItemType(left_type) || IsRangedItemType(right_type);
     }
     void CircleManager::CircleGroup::SetAttacker(FormID formID)
@@ -303,35 +303,61 @@ namespace WaitYourTurn
     }
     void CircleManager::CircleGroup::Update(float a_delta)
     {
-        ReadLocker readLocker(lock);
+        // Phase 1: decrement attacker timers under a write lock (we are mutating
+        // timeRemaining, so a read lock would be a data race). Collect expired IDs.
         std::vector<FormID> idsToRemove;
-        for(auto& kvp : attackerMap)
         {
-            kvp.second.timeRemaining -= a_delta;
-            if (kvp.second.timeRemaining <= 0.f)
+            WriteLocker writeLocker(lock);
+            for(auto& kvp : attackerMap)
             {
-                idsToRemove.emplace_back(kvp.first);
+                kvp.second.timeRemaining -= a_delta;
+                if (kvp.second.timeRemaining <= 0.f)
+                {
+                    idsToRemove.emplace_back(kvp.first);
+                }
             }
         }
-        readLocker.unlock();
+
+        // Phase 2: promote expired attackers back to circlers. UnsetAttacker takes
+        // its own write lock, so we must not hold ours when calling it.
         for(auto id : idsToRemove)
         {
             UnsetAttacker(id);
         }
-        readLocker.lock();
-        size_t maxAttackers = Settings::GetCircling().iMaxAttackers;
-        if (!allowAttackers || maxAttackers <= attackerMap.size()) { return; }
-        std::vector<size_t> indices(circlerMap.size());
-        for(auto& kvp : circlerMap)
+
+        // Phase 3: snapshot the circler FormIDs and the promotion gate under a read
+        // lock. We cannot call SetAttacker while holding ours (it takes its own
+        // write lock and std::shared_mutex is not recursive).
+        std::vector<FormID> indices;
+        bool                shouldPromote   = false;
+        size_t              maxAttackers    = 0;
+        size_t              currentAttackers = 0;
         {
-            indices.emplace_back(kvp.first);
+            ReadLocker readLocker(lock);
+            maxAttackers     = Settings::GetCircling().iMaxAttackers;
+            currentAttackers = attackerMap.size();
+            if (allowAttackers && maxAttackers > currentAttackers && !circlerMap.empty())
+            {
+                indices.reserve(circlerMap.size());
+                for(const auto& kvp : circlerMap)
+                {
+                    indices.emplace_back(kvp.first);
+                }
+                shouldPromote = true;
+            }
         }
+
+        if (!shouldPromote) { return; }
+
         std::shuffle(indices.begin(), indices.end(), mt);
-        readLocker.unlock();
-        for(int i = attackerMap.size(); i < maxAttackers && i < indices.size(); i++)
+
+        // Phase 4: promote circlers to attackers to fill remaining slots. SetAttacker
+        // re-validates that the FormID is still a circler, so it is safe even if a
+        // concurrent thread removed it between our snapshot and the call.
+        size_t needed = maxAttackers - currentAttackers;
+        for(size_t i = 0; i < needed && i < indices.size(); i++)
         {
-            SetAttacker(indices.back());
-            indices.pop_back();
+            SetAttacker(indices[i]);
         }
     }
     void CircleManager::CircleGroup::AllowAttackers(bool state)
