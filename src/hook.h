@@ -140,7 +140,7 @@ Up	p	sub_14081ECC0+13F	call    sub_140856200
 
         static void InstallDestructorHook()
         {
-            REL::Relocation<std::uintptr_t> target { REL::RelocationID(32468, 33215)};
+            REL::Relocation<std::uintptr_t> target { REL::VariantID(32468, 33215, 0x50d280)};
             _Destroy = safetyhook::create_inline(target.address(), Destroy); 
         }
         static void Destroy(RE::CombatController* a_controller);
