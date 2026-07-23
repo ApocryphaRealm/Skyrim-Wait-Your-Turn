@@ -18,9 +18,10 @@ namespace WaitYourTurn
             actor->GetActorRuntimeData().boolFlags.set(RE::Actor::BOOL_FLAGS::kCastingDisabled); 
             if (Settings::GetCircling().bDebugDisplay)
             {
-                auto *mesh = actor->GetHeadPartObject(RE::BGSHeadPart::HeadPartType::kFace);
-                
-                mesh->TintScenegraph(RE::NiColorA(0.f, 0.f, 0.f, 0.f));
+                if (auto *mesh = actor->GetHeadPartObject(RE::BGSHeadPart::HeadPartType::kFace))
+                {
+                    mesh->TintScenegraph(RE::NiColorA(0.f, 0.f, 0.f, 0.f));
+                }
             }
         });
     }
@@ -41,9 +42,10 @@ namespace WaitYourTurn
 
             if (Settings::GetCircling().bDebugDisplay)
             {
-                auto *mesh = actor->GetHeadPartObject(RE::BGSHeadPart::HeadPartType::kFace);
-                
-                mesh->TintScenegraph(RE::NiColorA(0.f, 1.f, 0.f, 20.f));
+                if (auto *mesh = actor->GetHeadPartObject(RE::BGSHeadPart::HeadPartType::kFace))
+                {
+                    mesh->TintScenegraph(RE::NiColorA(0.f, 1.f, 0.f, 20.f));
+                }
             }
         });
     }

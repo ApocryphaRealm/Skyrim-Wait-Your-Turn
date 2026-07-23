@@ -268,6 +268,10 @@ Down	o	.pdata:0000000143649EA0	RUNTIME_FUNCTION <rva sub_140559630, rva algn_140
         public:
         static void Install()
         {
+            if (REL::Module::IsVR())
+            {
+                return;
+            }
             REL::Relocation<std::uintptr_t> target { VTABLE_ArrowProjectile[0] }; 
             _UpdateImpl = target.write_vfunc(0xAB, UpdateImpl);
         }

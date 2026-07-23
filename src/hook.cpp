@@ -400,15 +400,29 @@ namespace WaitYourTurn
     void ProjectileHook::UpdateImpl(Projectile *a_projectile, float a_delta)
     {
         auto& settings = Settings::GetCircling();
-        if (!settings.bProjectileSlowdown)
+        if (!settings.bProjectileSlowdown || !a_projectile)
         {
             return _UpdateImpl(a_projectile, a_delta);
         }
         auto* player = RE::PlayerCharacter::GetSingleton();
+        if (!player)
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
         auto& rtd = a_projectile->GetProjectileRuntimeData(); 
-        auto shooter = rtd.shooter.get();
-        auto target = rtd.desiredTarget.get();
-        if (!player || !shooter || shooter->IsPlayerRef() || (target && !target->IsPlayerRef()))
+        auto shooterPtr = rtd.shooter.get();
+        if (!shooterPtr)
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
+        auto* shooter = shooterPtr.get();
+        if (!shooter || !shooter->Is(RE::FormType::ActorCharacter) || shooter->IsPlayerRef())
+        {
+            return _UpdateImpl(a_projectile, a_delta);
+        }
+        auto targetPtr = rtd.desiredTarget.get();
+        auto* target = targetPtr ? targetPtr.get() : nullptr;
+        if (target && (!target->Is(RE::FormType::ActorCharacter) || !target->IsPlayerRef()))
         {
             return _UpdateImpl(a_projectile, a_delta);
         }
