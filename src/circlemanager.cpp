@@ -45,7 +45,7 @@ namespace WaitYourTurn
         }
         if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
         result->second.circlerMap.emplace(combatMemberID, combatMemberID);
-        SKSE::log::info("Changed {:X} from target {:X} to target {:X}", combatMemberID, lastTargetID, targetID);
+        //SKSE::log::info("Changed {:X} from target {:X} to target {:X}", combatMemberID, lastTargetID, targetID);
     }
     void CircleManager::AddTarget(FormID targetID, FormID combatMemberID)
     {
@@ -60,7 +60,7 @@ namespace WaitYourTurn
         if (result->second.attackerMap.contains(combatMemberID) || result->second.circlerMap.contains(combatMemberID)) { return; }
         circleHandler->SetupCircling(combatMemberID, targetID);
         result->second.circlerMap.emplace(combatMemberID, combatMemberID);
-        SKSE::log::info("Added combatant {:X} to target {:X}", combatMemberID, targetID);
+        //SKSE::log::info("Added combatant {:X} to target {:X}", combatMemberID, targetID);
     }
     bool CircleManager::IsBeingCircled(Actor *a_target)
     {
@@ -138,7 +138,7 @@ namespace WaitYourTurn
         WriteLocker writeLocker(dataLock);
         if (circleGroupMap.erase(targetID) > 0)
         {
-            SKSE::log::info("Removed target {:X}", targetID);
+            //SKSE::log::info("Removed target {:X}", targetID);
         }
     }
     void CircleManager::RemoveCombatant(FormID targetID, FormID actorID)
@@ -147,7 +147,7 @@ namespace WaitYourTurn
         auto result = circleGroupMap.find(targetID);
         if (result == circleGroupMap.end())
         {
-            SKSE::log::info("Target {:X} not found to remove combatant {:X}", targetID, actorID);
+            //SKSE::log::info("Target {:X} not found to remove combatant {:X}", targetID, actorID);
             return;
         }
         auto& group = result->second;
@@ -161,7 +161,7 @@ namespace WaitYourTurn
         auto result = circleGroupMap.find(targetID);
         if (result == circleGroupMap.end())
         {
-            SKSE::log::info("Target {:X} not found to defend combatant {:X}", targetID, actorID);
+            //SKSE::log::info("Target {:X} not found to defend combatant {:X}", targetID, actorID);
             return;
         }
         auto& group = result->second;
@@ -173,7 +173,7 @@ namespace WaitYourTurn
         auto result = circleGroupMap.find(targetID);
         if (result == circleGroupMap.end())
         {
-            SKSE::log::info("Target {:X} not found to lock attackers", targetID);
+            //SKSE::log::info("Target {:X} not found to lock attackers", targetID);
             return;
         }
         auto& group = result->second;
@@ -185,7 +185,7 @@ namespace WaitYourTurn
         auto result = circleGroupMap.find(targetID);
         if (result == circleGroupMap.end())
         {
-            SKSE::log::info("Target {:X} not found to get allowed attackers", targetID);
+            //SKSE::log::info("Target {:X} not found to get allowed attackers", targetID);
             return true;
         }
         auto& group = result->second; 
@@ -273,7 +273,7 @@ namespace WaitYourTurn
         }
         circleHandler->StopCircling(iter->second.formID);
         iter->second.timeRemaining = GetAttackerDuration();
-        SKSE::log::info("New attacker {:X} for {}", iter->second.formID, iter->second.timeRemaining);
+       //SKSE::log::info("New attacker {:X} for {}", iter->second.formID, iter->second.timeRemaining);
         attackerMap.insert(circlerMap.extract(iter));
     }
     void CircleManager::CircleGroup::SetDefender(FormID formID)
@@ -286,7 +286,7 @@ namespace WaitYourTurn
         }
         circleHandler->StopCircling(iter->second.formID);
         iter->second.timeRemaining = GetDefenderDuration();
-        SKSE::log::info("New defender {:X} for {}", iter->second.formID, iter->second.timeRemaining);
+        //SKSE::log::info("New defender {:X} for {}", iter->second.formID, iter->second.timeRemaining);
         attackerMap.insert(circlerMap.extract(iter));
     }
     void CircleManager::CircleGroup::UnsetAttacker(FormID formID)
@@ -298,7 +298,7 @@ namespace WaitYourTurn
             return;
         }
         circleHandler->StartCircling(iter->second.formID);
-        SKSE::log::info("Stopped attacker {:X}", iter->second.formID);
+        //SKSE::log::info("Stopped attacker {:X}", iter->second.formID);
         circlerMap.insert(attackerMap.extract(iter));
     }
     void CircleManager::CircleGroup::Update(float a_delta)

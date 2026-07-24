@@ -60,7 +60,7 @@ namespace WaitYourTurn
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
             if (!actor || actor->IsDead()) { return; }
-            SKSE::log::info("{} started circling", actor->GetName());
+            //SKSE::log::info("{} started circling", actor->GetName());
             actor->EvaluatePackage(true, false);
         });
     }
@@ -75,7 +75,7 @@ namespace WaitYourTurn
         {
             auto* actor = TESForm::LookupByID<Actor>(id);
             if (!actor || actor->IsDead() || actor->IsDisabled() || !actor->IsAIEnabled() || !keyword) { return; }
-            SKSE::log::info("{} stopped circling", actor->GetName());
+            //SKSE::log::info("{} stopped circling", actor->GetName());
             auto *high = actor->GetHighProcess();
             if (high)
             {

@@ -11,14 +11,14 @@ namespace WaitYourTurn
     void PackageOverrideHook::RemoveOverride(RE::FormID actorId)
     {
         WriteLocker locker(dataLock);
-        SKSE::log::info("Removed package override for {:X}", actorId);
+        //SKSE::log::info("Removed package override for {:X}", actorId);
         overrideActors.erase(actorId);
     }
 
     void PackageOverrideHook::AddOverride(RE::FormID actorId)
     {
         WriteLocker locker(dataLock);
-        SKSE::log::info("Added package override for {:X}", actorId);
+        //SKSE::log::info("Added package override for {:X}", actorId);
         overrideActors.emplace(actorId);
     }
 
@@ -85,7 +85,7 @@ namespace WaitYourTurn
             {
                 continue;
             }
-            SKSE::log::info("Remove member {}", actor->GetName());
+            //SKSE::log::info("Remove member {}", actor->GetName());
             CircleManager::RemoveCombatant(targetActor->GetFormID(), actor->GetFormID());
         }
         _Destroy.call(a_controller);
@@ -163,7 +163,7 @@ namespace WaitYourTurn
             }
             else
             {
-                SKSE::log::info("Scanning new combat group for {}", a_actor->GetName());
+                //SKSE::log::info("Scanning new combat group for {}", a_actor->GetName());
                 BSReadLockGuard readLock(a_group->lock);
                 auto& targets = a_group->targets; 
                 for(auto& target : targets)
@@ -198,7 +198,7 @@ namespace WaitYourTurn
             {
                 auto* targetActor = target.targetHandle.get().get();
                 if (!targetActor || !CircleManager::IsBeingCircled(targetActor)) { continue; }
-                SKSE::log::info("Remove member {}", a_actor->GetName());
+                //SKSE::log::info("Remove member {}", a_actor->GetName());
                 CircleManager::RemoveCombatant(targetActor->GetFormID(), a_actor->GetFormID());
             }
         }
@@ -208,7 +208,7 @@ namespace WaitYourTurn
     {
         if (a_group && a_actor)
         {
-            SKSE::log::info("Remove member 2 {}", a_actor->GetName());
+            //SKSE::log::info("Remove member 2 {}", a_actor->GetName());
             BSReadLockGuard readLock(a_group->lock);
             auto& targets = a_group->targets;
             for(auto& target : targets)
@@ -224,7 +224,7 @@ namespace WaitYourTurn
     {
         if (a_group && a_actor)
         {
-            SKSE::log::info("Remove member 3 {}", a_actor->GetName());
+            //SKSE::log::info("Remove member 3 {}", a_actor->GetName());
             BSReadLockGuard readLock(a_group->lock);
             auto& targets = a_group->targets;
             for(auto& target : targets)
@@ -243,7 +243,7 @@ namespace WaitYourTurn
         {
             return result;
         }
-        SKSE::log::info("Reloading after merging combat groups");
+        //SKSE::log::info("Reloading after merging combat groups");
         for(auto& target : a_group->targets)
         {
             auto* targetActor = target.targetHandle.get().get();
@@ -276,11 +276,11 @@ namespace WaitYourTurn
             if (!CircleManager::CanCircle(newTarget.get(), combatant.get())) { return; }
             if (oldTarget && newTarget->GetFormID() != oldTarget->GetFormID())
             {
-                SKSE::log::info("Set target combatant {}", combatant->GetName());
+                //SKSE::log::info("Set target combatant {}", combatant->GetName());
                 CircleManager::ChangeTarget(newTarget->GetFormID(), oldTarget->GetFormID(), combatant->GetFormID());
                 return;
             }
-            SKSE::log::info("Add target combatant {}", combatant->GetName());
+            //SKSE::log::info("Add target combatant {}", combatant->GetName());
             CircleManager::AddTarget(newTarget->GetFormID(), combatant->GetFormID());
         }
         // if (a_controller->cachedAttacker && a_controller->cachedTarget)
@@ -302,11 +302,11 @@ namespace WaitYourTurn
             if (!CircleManager::CanCircle(newTarget.get(), combatant.get())) { return; }
             if (oldTarget && newTarget->GetFormID() != oldTarget->GetFormID())
             {
-                SKSE::log::info("Set target combatant {}", combatant->GetName());
+                //SKSE::log::info("Set target combatant {}", combatant->GetName());
                 CircleManager::ChangeTarget(newTarget->GetFormID(), oldTarget->GetFormID(), combatant->GetFormID());
                 return;
             }
-            SKSE::log::info("Add target combatant {}", combatant->GetName());
+            //SKSE::log::info("Add target combatant {}", combatant->GetName());
             CircleManager::AddTarget(newTarget->GetFormID(), combatant->GetFormID());
         }
     }
@@ -357,7 +357,7 @@ namespace WaitYourTurn
         auto* target_actor = refr->As<Actor>(); 
         if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
         CircleManager::AllowAttackers(target_actor->GetFormID(), false);
-        SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
+        //SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
     }
     void RaceTransformHook::FinishWerewolf(WerewolfEffect *a_effect)
     {
@@ -374,7 +374,7 @@ namespace WaitYourTurn
         auto* target_actor = refr->As<Actor>(); 
         if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
         CircleManager::AllowAttackers(target_actor->GetFormID(), true);
-        SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
+        //SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
     }
     void RaceTransformHook::StartVampire(VampireLordEffect *a_effect)
     {
@@ -391,7 +391,7 @@ namespace WaitYourTurn
         auto* target_actor = refr->As<Actor>(); 
         if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
         CircleManager::AllowAttackers(target_actor->GetFormID(), false);
-        SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
+        //SKSE::log::info("{:X} transform protection started.", target_actor->GetFormID());
     }
     void RaceTransformHook::FinishVampire(VampireLordEffect *a_effect)
     {
@@ -408,7 +408,7 @@ namespace WaitYourTurn
         auto* target_actor = refr->As<Actor>(); 
         if (!target_actor || !CircleManager::IsBeingCircled(target_actor)) { return; }
         CircleManager::AllowAttackers(target_actor->GetFormID(), true);
-        SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
+        //SKSE::log::info("{:X} transform protection finished.", target_actor->GetFormID());
     }
     bool KillmoveHook::StartKillmove(Actor *a_attacker, Actor *a_victim)
     {
