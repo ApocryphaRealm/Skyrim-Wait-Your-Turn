@@ -61,10 +61,21 @@ the System section then tells the player to use Save instead of relying on close
 
 Upstream builds with **xmake**, not CMake, and pulls CommonLibSSE-NG in as a git submodule.
 
+You need three things:
+
+- **Visual Studio** with the *Desktop development with C++* workload. Community is fine.
+- **xmake** from <https://xmake.io>. The portable zip from its GitHub releases works and
+  needs no installer or admin rights; put the folder on your `PATH`.
+- **git**, on your `PATH`. xmake shells out to it, and without it xmake misdetects the
+  host as MSYS and fails while trying to fetch git as a host package.
+
 ```
 git clone --recurse-submodules <this repo>
 build.bat
 ```
+
+The `--recurse-submodules` matters: CommonLibSSE-NG is a submodule, and the build cannot
+find it otherwise.
 
 Nothing in the build scripts is specific to one machine. `find-msvc.bat` locates Visual
 Studio with `vswhere` and puts the CMake and Ninja that ship with it on `PATH`, and
