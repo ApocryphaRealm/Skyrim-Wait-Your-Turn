@@ -37,8 +37,8 @@ bool HasRequiredExports()
     constexpr const char* required[] = {
         "AddSectionItem",
         "igTextV",
-        "igTextDisabled",
-        "igTextWrapped",
+        "igTextDisabledV",
+        "igTextWrappedV",
         "igCollapsingHeader_TreeNodeFlags",
         "igCheckbox",
         "igSliderInt",
@@ -50,7 +50,7 @@ bool HasRequiredExports()
         "igIndent",
         "igUnindent",
         "igIsItemHovered",
-        "igSetTooltip"
+        "igSetTooltipV"
     };
 
     for (const char* name : required)
