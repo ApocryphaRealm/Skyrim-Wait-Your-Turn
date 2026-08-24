@@ -19,6 +19,7 @@ to make this modified source available under the same licence. See `LICENSE`.
 | `src/Menu/ingame-menu.h`, `src/Menu/ingame-menu.cpp` | Rewritten against SKSE Menu Framework. Same three sections, same settings, same help text. |
 | `src/plugin.cpp` | `Menu::RegisterMenu()` moved out of `SKSEPluginLoad` into the `kPostPostLoad` message. |
 | `xmake.lua` | `imgui` dropped from `add_requires`/`add_packages`. |
+| `build.bat`, `find-msvc.bat` | Added. Discover Visual Studio with `vswhere` and take xmake from `PATH`, so no machine-specific path is committed. |
 
 Nothing outside the menu was touched — the circling system, hooks, events and
 `src/settings.h` are exactly as upstream left them.
@@ -65,9 +66,10 @@ git clone --recurse-submodules <this repo>
 build.bat
 ```
 
-`build.bat` points at a portable xmake unpacked under the session scratchpad and at the
-Visual Studio 18 install on the machine it was written on — edit those two paths if yours
-differ, or just put `xmake` on your `PATH` and run `xmake f -m releasedbg && xmake`.
+Nothing in the build scripts is specific to one machine. `find-msvc.bat` locates Visual
+Studio with `vswhere` and puts the CMake and Ninja that ship with it on `PATH`, and
+`build.bat` takes xmake from `PATH`, or from an `XMAKE` environment variable pointing at
+the executable if you keep it somewhere unusual.
 
 Output lands in `build/windows/x64/releasedbg/WaitYourTurn.dll`. A full build from cold
 takes roughly two minutes.
