@@ -21,6 +21,11 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
 		break;
+	case SKSE::MessagingInterface::kPostPostLoad:
+		// Every SKSE plugin has loaded by now, so SKSE Menu Framework is certain to be in
+		// the process and its module can be looked up.
+		Menu::RegisterMenu();
+		break;
 	case SKSE::MessagingInterface::kPreLoadGame:
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
@@ -47,7 +52,6 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	RaceTransformHook::Install();
 	ProjectileHook::Install();
 	DisableHook::Install();
-	Menu::RegisterMenu();
     auto messaging = SKSE::GetMessagingInterface();
 	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
 		return false;

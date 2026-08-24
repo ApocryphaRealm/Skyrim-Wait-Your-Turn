@@ -1,29 +1,30 @@
 #pragma once
 
-#include "../include/SimpleIni.h"
-#include "FUCK_API.h"
+#include <atomic>
+#include <filesystem>
+#include <format>
+#include <string>
+
+#include "SKSEMenuFramework.h"
 
 namespace WaitYourTurn
 {
 namespace Menu
 {
+// Adds the Wait Your Turn page to SKSE Menu Framework's Mod Control Panel.
+//
+// Safe to call when the framework is missing or too old to drive: it writes the reason to
+// the log and does nothing else, leaving the mod running on its INI settings alone.
+//
+// Must be called once every SKSE plugin has loaded (kPostPostLoad is a good moment),
+// because the framework is looked up as an already-loaded module.
 void RegisterMenu();
 
-struct WYTTool : FUCK::ITool
-{
-    const char* PluginName() const override { return "WaitYourTurn"; }
-    const char* Name() const override { return "Wait Your Turn"; }
-    const char* Group() const override { return "Wait Your Turn"; }
-    void        Draw() override;
-    void        OnOpen() override;
-    void        OnClose() override;
+// The page renderer. SKSE Menu Framework calls this from the render thread.
+void __stdcall Render();
 
-private:
-    void DrawCircling();
-    void DrawProjectiles();
-    void DrawSystem();
-};
-
-inline WYTTool g_wytTool;
+// Open/close notifications for the Mod Control Panel, used to reload the INI when the panel
+// opens and write it back when the panel closes.
+void __stdcall OnMenuEvent(SKSEMenuFramework::Model::EventType a_eventType);
 } // namespace Menu
 } // namespace WaitYourTurn

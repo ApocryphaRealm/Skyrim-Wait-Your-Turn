@@ -27,14 +27,6 @@
             },
             version = "24.2.0"
         },
-        ["imgui#f56260b5"] = {
-            repo = {
-                branch = "master",
-                commit = "8917c2f7818847fead2be9b3b6f77d90d97323f3",
-                url = "https://github.com/xmake-io/xmake-repo.git"
-            },
-            version = "v1.92.6"
-        },
         ["ninja#f56260b5"] = {
             repo = {
                 branch = "master",
@@ -59,13 +51,13 @@
             },
             version = "v0.6.9"
         },
-        ["spdlog#09c8c173"] = {
+        ["spdlog v1.16.0#09c8c173"] = {
             repo = {
                 branch = "master",
-                commit = "75a2ed63e06b1637b2621463e3b26780972fdf1d",
+                commit = "822093d54b0fb3553684436e49e1e65c62a94086",
                 url = "https://gitlab.com/tboox/xmake-repo.git"
             },
-            version = "v1.17.0"
+            version = "v1.16.0"
         },
         ["zycore-c v1.5.0#f56260b5"] = {
             repo = {

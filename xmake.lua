@@ -35,7 +35,8 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 -- include custom rules
 includes("xmake-rules.lua")
 
-add_requires("imgui")
+-- The SKSE Menu Framework header is self-contained: it reaches ImGui through the
+-- framework's own exports at runtime, so imgui is no longer a build dependency.
 add_requires("safetyhook")
 
 -- targets
@@ -63,5 +64,4 @@ target(name)
     add_includedirs("src")
     set_pcxxheader("src/pch.h")
 
-    add_packages("imgui")
     add_packages("safetyhook")
