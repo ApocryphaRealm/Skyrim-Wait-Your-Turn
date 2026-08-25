@@ -57,6 +57,21 @@ logging which one. The mod itself keeps working; only the menu is skipped.
 mandatory widget exports, so a framework build that lacks it still gets a working page —
 the System section then tells the player to use Save instead of relying on close-to-save.
 
+## 1.0.2: null-safety audit (preventative, no known crash in this mod)
+
+Standing rule now (`CLAUDE.md` rule 14, in the sibling Skyrim mods project): every mod gets
+audited for unchecked null-dereference lookups, not just the one where the pattern actually
+crashed (Dragon's Eye Minimap). This mod's own settings load through `CSimpleIniA`
+(SimpleIni), which returns default values directly rather than a pointer, so the specific
+`GetSetting(...)->data` crash class doesn't apply here. Three real unchecked derefs were
+found and fixed in `src/hook.cpp` instead: `CombatGroupHook::Destroy` dereferenced
+`a_controller->combatGroup` and `a_controller->attackerHandle.get()` unconditionally;
+`CombatGroupHook::Update` dereferenced `a_group->lock` without checking `a_group`, unlike
+every sibling hook in the same file which already checked their own `a_group` parameter;
+`CombatGroupHook::StopCombat` (currently dead code, not wired up in `Install()`) had the
+same missing check, fixed for consistency. No known crash was ever reported for this mod
+specifically - this pass is preventative.
+
 ## Building
 
 Upstream builds with **xmake**, not CMake, and pulls CommonLibSSE-NG in as a git submodule.

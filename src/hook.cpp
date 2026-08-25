@@ -75,7 +75,21 @@ namespace WaitYourTurn
     void CombatGroupHook::Destroy(RE::CombatController* a_controller)
     {
         auto* group = a_controller->combatGroup;
-        auto actor = a_controller->attackerHandle.get();
+        if (!group)
+        {
+            // A CombatController being destroyed with no combatGroup assigned is a real
+            // possibility (e.g. torn down before ever joining a group), not a bug - skip the
+            // circling cleanup rather than dereferencing a null group.
+            SKSE::log::warn("CombatGroupHook::Destroy: CombatController has no combatGroup; skipping circle cleanup");
+            return _Destroy.call(a_controller);
+        }
+        auto actorPtr = a_controller->attackerHandle.get();
+        auto* actor = actorPtr.get();
+        if (!actor)
+        {
+            SKSE::log::warn("CombatGroupHook::Destroy: attackerHandle did not resolve to a live actor; skipping circle cleanup");
+            return _Destroy.call(a_controller);
+        }
         BSReadLockGuard readLock(group->lock);
         auto &targets = group->targets;
         for (auto &target : targets)
@@ -93,6 +107,11 @@ namespace WaitYourTurn
     void CombatGroupHook::Update(CombatGroup *a_group)
     {
         _Update(a_group);
+        if (!a_group)
+        {
+            SKSE::log::warn("CombatGroupHook::Update called with a null CombatGroup; skipping circle bookkeeping");
+            return;
+        }
         BSReadLockGuard readLock(a_group->lock);
         auto& members = a_group->members;
         for(auto& member : members)
@@ -141,6 +160,11 @@ namespace WaitYourTurn
     }
     void CombatGroupHook::StopCombat(CombatGroup *a_group)
     {
+        if (!a_group)
+        {
+            SKSE::log::warn("CombatGroupHook::StopCombat called with a null CombatGroup; skipping circle cleanup");
+            return;
+        }
         BSReadLockGuard readLock(a_group->lock);
         auto& members = a_group->members;
         for(auto& member : members)
