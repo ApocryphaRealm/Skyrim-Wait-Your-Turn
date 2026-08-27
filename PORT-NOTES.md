@@ -72,6 +72,30 @@ every sibling hook in the same file which already checked their own `a_group` pa
 same missing check, fixed for consistency. No known crash was ever reported for this mod
 specifically - this pass is preventative.
 
+## 1.0.3: `uLogLevel` surfaced to the INI and the settings page
+
+Standing rule (`CLAUDE.md` rule 28, in the sibling Skyrim mods project): every mod ships with
+the most comprehensive log level as its default, in both the shipped INI and the compiled-in
+default, and the two must agree exactly - so a bug report arrives with a log detailed enough
+to diagnose from without asking the reporter to reproduce anything.
+
+This mod already logged at trace, but hardcoded in `SetupLog()`: there was no way to turn it
+down, and nothing in the INI named the level at all. A new `[Debug]` section in
+`ini/Settings.ini` now carries `uLogLevel` (0 = trace ... 6 = off, indexing spdlog's own level
+table), read through the same `CSimpleIniA`/`NAMEOF` pattern as every other setting in
+`settings.h`, with the struct's own initializer - `uint32_t uLogLevel = 0` - as the compiled
+default matching the shipped INI.
+
+`SetupLog()` still opens at trace, deliberately: the INI is not read until `kDataLoaded`, so
+everything before that (plugin load, hook installation) is captured whatever `uLogLevel` turns
+out to say. `ApplyLogLevel()` narrows it from there, and is called again whenever the value can
+change - the settings page's Log Level combo, Reload From INI, Reset Defaults, and the Mod
+Control Panel's own open event. It also writes a one-line header naming the active level, at
+that level, so a log file sent in with a report is self-describing.
+
+`log.h`'s two functions are `inline` now, because the header is included from two translation
+units (`plugin.cpp` and `Menu/ingame-menu.cpp`) rather than one.
+
 ## Building
 
 Upstream builds with **xmake**, not CMake, and pulls CommonLibSSE-NG in as a git submodule.

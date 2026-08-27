@@ -1,6 +1,7 @@
 #include "ingame-menu.h"
 
 #include "settings.h"
+#include "log.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -41,6 +42,7 @@ bool HasRequiredExports()
         "igTextWrappedV",
         "igCollapsingHeader_TreeNodeFlags",
         "igCheckbox",
+        "igCombo_Str_arr",
         "igSliderInt",
         "igSliderFloat",
         "igButton",
@@ -135,18 +137,34 @@ void DrawProjectiles()
     ImGuiMCP::Unindent();
 }
 
+// Ordered to match the uLogLevel numbering in Settings.ini, so the index the combo hands
+// back IS the value written to the INI.
+constexpr const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warning", "Error", "Critical", "Off" };
+constexpr int kLogLevelCount = 7;
+
 void DrawSystem()
 {
     auto& c = Settings::GetCircling();
+    auto& d = Settings::GetDebug();
 
     ImGuiMCP::Checkbox("Debug Display##wyt", &c.bDebugDisplay);
     HelpMarker("Highlights attacking actors in white. Intended for debugging/development.");
+
+    int level = static_cast<int>(d.uLogLevel);
+    if (ImGuiMCP::Combo("Log Level##wyt", &level, kLogLevelNames, kLogLevelCount))
+    {
+        d.uLogLevel = static_cast<uint32_t>(std::clamp(level, 0, kLogLevelCount - 1));
+        ApplyLogLevel();
+    }
+    HelpMarker("How much detail goes into WaitYourTurn.log. Ships at Trace so a bug report "
+               "arrives with everything already in the log. Applies immediately.");
 
     ImGuiMCP::Separator();
 
     if (ImGuiMCP::Button("Reset Defaults##wyt"))
     {
         Settings::RestoreDefaults();
+        ApplyLogLevel();
     }
     HelpMarker("Restores all settings to their built-in defaults and saves them to the INI file.");
 
@@ -155,6 +173,7 @@ void DrawSystem()
     if (ImGuiMCP::Button("Reload From INI##wyt"))
     {
         Settings::LoadSettings();
+        ApplyLogLevel();
     }
     HelpMarker("Discards unsaved changes by reloading values from Settings.ini.");
 
@@ -201,6 +220,7 @@ void __stdcall OnMenuEvent(SKSEMenuFramework::Model::EventType a_eventType)
     {
     case SKSEMenuFramework::Model::kOpenMenu:
         Settings::LoadSettings();
+        ApplyLogLevel();
         break;
     case SKSEMenuFramework::Model::kCloseMenu:
         Settings::SaveSettings();

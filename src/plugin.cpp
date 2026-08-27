@@ -16,6 +16,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
 		Settings::LoadSettings();
+		// The INI owns the log level from here on; SetupLog() only got us this far at trace.
+		ApplyLogLevel();
 		RegisterEventHandlers();
 		CircleManager::SetupCircleHandler();
 		break;
